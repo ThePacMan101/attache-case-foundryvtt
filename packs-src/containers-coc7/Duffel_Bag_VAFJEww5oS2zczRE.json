@@ -1,0 +1,26 @@
+{
+  "_id": "VAFJEww5oS2zczRE",
+  "_key": "!items!VAFJEww5oS2zczRE",
+  "name": "Duffel Bag",
+  "type": "item",
+  "img": "icons/containers/bags/sack-cloth-green-blue.webp",
+  "system": {
+    "description": {
+      "value": "<p>Long cylindrical kit bag. Fits long guns and a lot of gear.</p><p><em>Attaché Case container: 12 × 6 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 1100000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 12,
+        "rows": 6
+      }
+    }
+  }
+}

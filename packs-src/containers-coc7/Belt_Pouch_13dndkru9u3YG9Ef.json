@@ -1,0 +1,26 @@
+{
+  "_id": "13dndkru9u3YG9Ef",
+  "_key": "!items!13dndkru9u3YG9Ef",
+  "name": "Belt Pouch",
+  "type": "item",
+  "img": "icons/containers/bags/pouch-leather-silver-brown.webp",
+  "system": {
+    "description": {
+      "value": "<p>A small leather pouch on the belt. Ammunition, a lighter, a few keys.</p><p><em>Attaché Case container: 3 × 2 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 100000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 3,
+        "rows": 2
+      }
+    }
+  }
+}

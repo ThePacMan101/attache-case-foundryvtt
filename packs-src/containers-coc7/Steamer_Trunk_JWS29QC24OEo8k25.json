@@ -1,0 +1,26 @@
+{
+  "_id": "JWS29QC24OEo8k25",
+  "_key": "!items!JWS29QC24OEo8k25",
+  "name": "Steamer Trunk",
+  "type": "item",
+  "img": "icons/containers/chest/chest-reinforced-steel-red.webp",
+  "system": {
+    "description": {
+      "value": "<p>Heavy travel trunk for an expedition. Not something you carry while running.</p><p><em>Attaché Case container: 14 × 8 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 1200000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 14,
+        "rows": 8
+      }
+    }
+  }
+}

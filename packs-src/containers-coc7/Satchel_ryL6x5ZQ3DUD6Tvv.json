@@ -1,0 +1,26 @@
+{
+  "_id": "ryL6x5ZQ3DUD6Tvv",
+  "_key": "!items!ryL6x5ZQ3DUD6Tvv",
+  "name": "Satchel",
+  "type": "item",
+  "img": "icons/containers/bags/sack-simple-leather-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>Shoulder bag for notebooks, a camera and the day's essentials.</p><p><em>Attaché Case container: 6 × 4 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 400000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 6,
+        "rows": 4
+      }
+    }
+  }
+}

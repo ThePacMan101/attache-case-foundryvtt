@@ -1,0 +1,24 @@
+{
+  "_id": "BWtvkFB4zvg9aPd3",
+  "_key": "!items!BWtvkFB4zvg9aPd3",
+  "name": "Attaché Case",
+  "type": "gear",
+  "img": "icons/containers/chest/chest-simple-box-brown.webp",
+  "system": {
+    "description": "<p>A rigid case with a foam-lined interior. Packed well, it holds a rifle and sidearms.</p><p><em>Attaché Case container: 9 × 5 cells.</em></p>"
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 600000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 9,
+        "rows": 5
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "_id": "aQHPStSJglaiQGZ2",
+  "_key": "!items!aQHPStSJglaiQGZ2",
+  "name": "Gun Case",
+  "type": "gear",
+  "img": "icons/containers/boxes/crate-heavy-yellow.webp",
+  "system": {
+    "description": "<p>Long hard case for rifles and shotguns. Not much room for anything else.</p><p><em>Attaché Case container: 12 × 3 cells.</em></p>"
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 800000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 12,
+        "rows": 3
+      }
+    }
+  }
+}

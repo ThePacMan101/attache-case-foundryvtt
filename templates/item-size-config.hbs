@@ -1,0 +1,61 @@
+<div class="attache-config-body">
+  <div class="attache-size-head">
+    <div class="attache-preview">
+      <div class="attache-preview-grid" style="--w: {{w}}; --h: {{h}}">
+        <img src="{{item.img}}" alt="" draggable="false">
+      </div>
+      <span class="attache-preview-label"></span>
+    </div>
+    <p class="hint attache-default">{{defaultLabel}}</p>
+  </div>
+
+  <fieldset class="attache-size-fields">
+    <legend>{{localize "ATTACHE.Config.Size"}}</legend>
+    <input type="hidden" name="useDefault" value="{{#if custom}}false{{else}}true{{/if}}">
+    <div class="form-group">
+      <label for="{{rootId}}-w">{{localize "ATTACHE.Config.Width"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-w" type="number" name="w" value="{{w}}" min="1" max="{{max}}" step="1" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-h">{{localize "ATTACHE.Config.Height"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-h" type="number" name="h" value="{{h}}" min="1" max="{{max}}" step="1" required>
+      </div>
+    </div>
+    <button type="button" class="attache-reset" data-action="resetSize">
+      <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> {{localize "ATTACHE.Config.Reset"}}
+    </button>
+  </fieldset>
+
+  {{#if isGM}}
+  <div class="form-group">
+    <label for="{{rootId}}-excluded">{{localize "ATTACHE.Config.Exclude"}}</label>
+    <div class="form-fields">
+      <input id="{{rootId}}-excluded" type="checkbox" name="excluded"{{#if excluded}} checked{{/if}}>
+    </div>
+  </div>
+
+  <fieldset class="attache-container-fields">
+    <legend>
+      <label class="attache-legend-toggle">
+        <input type="checkbox" name="isContainer"{{#if isContainer}} checked{{/if}}>
+        {{localize "ATTACHE.Config.IsContainer"}}
+      </label>
+    </legend>
+    <div class="form-group">
+      <label for="{{rootId}}-cols">{{localize "ATTACHE.Config.Columns"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-cols" type="number" name="cols" value="{{cols}}" min="1" max="{{max}}" step="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-rows">{{localize "ATTACHE.Config.Rows"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-rows" type="number" name="rows" value="{{rows}}" min="1" max="{{max}}" step="1">
+      </div>
+    </div>
+  </fieldset>
+  {{/if}}
+</div>

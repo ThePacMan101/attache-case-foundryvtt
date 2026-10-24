@@ -1,0 +1,172 @@
+{
+  "ATTACHE": {
+    "Window": {
+      "Title": "Attaché Case: {actor}",
+      "Body": "On Person",
+      "Size": "{w}×{h}",
+      "Fill": "{pct}%",
+      "Capacity": "{used} / {total} cells ({pct}%)",
+      "AutoArrange": "Auto-arrange",
+      "Configure": "Configure",
+      "Worn": "Worn",
+      "WornHint": "Drop armor here",
+      "Unstowed": "Unstowed",
+      "Empty": "Empty",
+      "Pack": "Place unstowed items",
+      "Excluded": "Not carried",
+      "NoContainers": "No containers"
+    },
+    "Menu": {
+      "OpenCase": "Attaché Case",
+      "ItemSize": "Inventory Size",
+      "Open": "Open",
+      "OpenSheet": "Open Sheet",
+      "Rotate": "Rotate",
+      "Stow": "Unstow",
+      "Wear": "Wear",
+      "TakeOff": "Take Off",
+      "Give": "Give to…",
+      "Exclude": "Exclude",
+      "Include": "Include",
+      "MakeContainer": "Make Container…",
+      "Delete": "Delete",
+      "Resize": "Resize…",
+      "RemoveContainer": "Remove Container",
+      "Options": "Options"
+    },
+    "Config": {
+      "SizeTitle": "Inventory Size: {name}",
+      "ActorTitle": "Configure: {actor}",
+      "ResizeTitle": "Resize: {name}",
+      "GiveTitle": "Give: {name}",
+      "Size": "Size",
+      "Width": "Width",
+      "Height": "Height",
+      "Columns": "Columns",
+      "Rows": "Rows",
+      "Default": "Default: {size} ({source})",
+      "DefaultNone": "Default: takes no space ({source})",
+      "Source": {
+        "Id": "known item",
+        "Name": "item name",
+        "Keyword": "name keyword",
+        "Type": "item type",
+        "Fallback": "fallback",
+        "NonPhysical": "not an inventory item"
+      },
+      "Reset": "Reset to Default",
+      "Exclude": "Takes no space",
+      "IsContainer": "Container",
+      "UseDefault": "Use world default ({size})",
+      "BodyHint": "0 columns or rows: no grid.",
+      "Containers": "Containers",
+      "NoContainers": "None",
+      "AddContainer": "Add Container",
+      "RemoveConfirm": "Remove {name}?",
+      "DeleteConfirm": "Delete {name}?",
+      "Give": "Give",
+      "Save": "Save",
+      "Cancel": "Cancel"
+    },
+    "Settings": {
+      "DefaultBodyCols": {
+        "Name": "Body Grid Columns",
+        "Hint": "Default columns of the on-person grid. GMs can override it per actor."
+      },
+      "DefaultBodyRows": {
+        "Name": "Body Grid Rows",
+        "Hint": "Default rows of the on-person grid. GMs can override it per actor."
+      },
+      "AutoPlace": {
+        "Name": "Place New Items",
+        "Hint": "Put new items in the first free spot."
+      },
+      "AllowWorn": {
+        "Name": "Worn Armor",
+        "Hint": "Worn armor takes no grid space."
+      },
+      "PlayersCanEditSizes": {
+        "Name": "Players Edit Sizes",
+        "Hint": "Players can change the size of their own items."
+      },
+      "CellSize": {
+        "Name": "Cell Size",
+        "Hint": "Size of one grid cell, in pixels."
+      },
+      "ShowNames": {
+        "Name": "Show Item Names",
+        "Hint": "Show names on the item tiles."
+      },
+      "OpenKey": {
+        "Name": "Open Attaché Case",
+        "Hint": "Your character, or the selected token's actor."
+      }
+    },
+    "Notify": {
+      "NoActor": "No character or selected token.",
+      "Unsupported": "This game system is not supported.",
+      "NoPermission": "You do not have permission to do that.",
+      "NoSpace": "{name} does not fit there.",
+      "CannotRotate": "{name} cannot be rotated there.",
+      "DidNotFit": "{name} did not fit. It is in Unstowed.",
+      "DidNotFitMany": "{count} items did not fit. They are in Unstowed.",
+      "NotArmor": "Only armor can be worn.",
+      "NotInventory": "{name} is not an inventory item.",
+      "NoGM": "No GM is connected.",
+      "NoGiveTargets": "Nobody to give it to.",
+      "Transferred": "{name} given to {actor}.",
+      "TransferFailed": "Could not give {name}.",
+      "SaveFailed": "Could not save the changes."
+    },
+    "Preset": {
+      "BeltPouch": {
+        "Name": "Belt Pouch",
+        "Description": "A small leather pouch on the belt. Ammunition, a lighter, a few keys."
+      },
+      "CoatPockets": {
+        "Name": "Coat Pockets",
+        "Description": "The deep pockets of an overcoat or field jacket. Room for a handgun and small things."
+      },
+      "TacticalVest": {
+        "Name": "Tactical Vest",
+        "Description": "Load-bearing vest with magazine and utility pouches. Everything within reach."
+      },
+      "Satchel": {
+        "Name": "Satchel",
+        "Description": "Shoulder bag for notebooks, a camera and the day's essentials."
+      },
+      "DoctorsBag": {
+        "Name": "Doctor's Bag",
+        "Description": "Hinged leather medical bag. Fits a first aid kit, instruments and a revolver."
+      },
+      "AttacheCase": {
+        "Name": "Attaché Case",
+        "Description": "A rigid case with a foam-lined interior. Packed well, it holds a rifle and sidearms."
+      },
+      "Backpack": {
+        "Name": "Backpack",
+        "Description": "Everyday canvas or nylon backpack. Takes a shotgun, but not a full-length rifle."
+      },
+      "GunCase": {
+        "Name": "Gun Case",
+        "Description": "Long hard case for rifles and shotguns. Not much room for anything else."
+      },
+      "Suitcase": {
+        "Name": "Suitcase",
+        "Description": "Travel suitcase. Plenty of room, but slow to open in a hurry."
+      },
+      "MilitaryRucksack": {
+        "Name": "Military Rucksack",
+        "Description": "Framed field pack for long operations and expeditions."
+      },
+      "DuffelBag": {
+        "Name": "Duffel Bag",
+        "Description": "Long cylindrical kit bag. Fits long guns and a lot of gear."
+      },
+      "SteamerTrunk": {
+        "Name": "Steamer Trunk",
+        "Description": "Heavy travel trunk for an expedition. Not something you carry while running."
+      }
+    }
+  }
+}

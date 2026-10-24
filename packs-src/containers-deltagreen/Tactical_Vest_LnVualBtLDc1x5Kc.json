@@ -1,0 +1,24 @@
+{
+  "_id": "LnVualBtLDc1x5Kc",
+  "_key": "!items!LnVualBtLDc1x5Kc",
+  "name": "Tactical Vest",
+  "type": "gear",
+  "img": "icons/equipment/chest/vest-cloth-tattered-tan.webp",
+  "system": {
+    "description": "<p>Load-bearing vest with magazine and utility pouches. Everything within reach.</p><p><em>Attaché Case container: 6 × 3 cells.</em></p>"
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 300000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 6,
+        "rows": 3
+      }
+    }
+  }
+}

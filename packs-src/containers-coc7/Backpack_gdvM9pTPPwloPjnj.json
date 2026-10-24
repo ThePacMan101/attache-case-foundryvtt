@@ -1,0 +1,26 @@
+{
+  "_id": "gdvM9pTPPwloPjnj",
+  "_key": "!items!gdvM9pTPPwloPjnj",
+  "name": "Backpack",
+  "type": "item",
+  "img": "icons/containers/bags/pack-leather-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>Everyday canvas or nylon backpack. Takes a shotgun, but not a full-length rifle.</p><p><em>Attaché Case container: 8 × 6 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 700000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 8,
+        "rows": 6
+      }
+    }
+  }
+}

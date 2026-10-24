@@ -1,0 +1,26 @@
+{
+  "_id": "xXMXQMHnsXx3Of6k",
+  "_key": "!items!xXMXQMHnsXx3Of6k",
+  "name": "Suitcase",
+  "type": "item",
+  "img": "icons/containers/chest/chest-elm-steel-brown.webp",
+  "system": {
+    "description": {
+      "value": "<p>Travel suitcase. Plenty of room, but slow to open in a hurry.</p><p><em>Attaché Case container: 10 × 6 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 900000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 10,
+        "rows": 6
+      }
+    }
+  }
+}

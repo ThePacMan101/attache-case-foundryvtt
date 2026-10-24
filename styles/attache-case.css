@@ -1,0 +1,932 @@
+/* ==========================================================================
+   Attaché Case — styles. Everything is scoped under .attache-case (main window),
+   .attache-case-dialog (config dialogs), .attache-dialog (prompts) or an .attache-* class.
+   Colours come from Foundry's theme variables where they exist; the case lining has
+   its own light and dark palette.
+   ========================================================================== */
+
+/* --- Palette ------------------------------------------------------------- */
+
+.attache-case,
+.attache-case-dialog,
+.attache-dialog {
+  --attache-cell: 48px;
+  --attache-gap: 12px;
+  --attache-radius: 6px;
+
+  /* Light theme: warm grey leather lining. */
+  --attache-felt: #5c564f;
+  --attache-felt-deep: #48433d;
+  --attache-line: rgba(255, 255, 255, 0.09);
+  --attache-stitch: rgba(255, 255, 255, 0.28);
+  /* Tiles are opaque raised plates, clearly lighter than the empty lining around them. */
+  --attache-tile: #78716a;
+  --attache-tile-top: #857e76;
+  --attache-tile-hover: #8d857c;
+  --attache-tile-border: rgba(255, 255, 255, 0.24);
+  --attache-tile-border-hover: rgba(255, 255, 255, 0.5);
+  --attache-surface: color-mix(in srgb, var(--color-text-primary, #191813) 5%, transparent);
+  --attache-surface-strong: color-mix(in srgb, var(--color-text-primary, #191813) 9%, transparent);
+  --attache-border: var(--color-border, rgba(0, 0, 0, 0.25));
+  --attache-text-muted: var(--color-text-secondary, #5b5a55);
+  --attache-ok: var(--color-level-success, #3a8a43);
+  --attache-bad: var(--color-level-error, #b2392f);
+  --attache-accent: var(--color-warm-2, #c9763a);
+  --attache-focus: var(--color-shadow-primary, #ff6400);
+}
+
+body.theme-dark .attache-case,
+body.theme-dark .attache-case-dialog,
+body.theme-dark .attache-dialog,
+.attache-case.themed.theme-dark,
+.attache-case-dialog.themed.theme-dark,
+.attache-dialog.themed.theme-dark {
+  /* Dark theme: deep blue-grey felt, like the inside of a gun case. */
+  --attache-felt: #262b34;
+  --attache-felt-deep: #1b1f26;
+  --attache-line: rgba(255, 255, 255, 0.06);
+  --attache-stitch: rgba(255, 255, 255, 0.16);
+  --attache-tile: #343b47;
+  --attache-tile-top: #3e4654;
+  --attache-tile-hover: #47505f;
+  --attache-tile-border: rgba(255, 255, 255, 0.16);
+  --attache-tile-border-hover: rgba(255, 255, 255, 0.4);
+  --attache-surface: rgba(255, 255, 255, 0.03);
+  --attache-surface-strong: rgba(255, 255, 255, 0.06);
+}
+
+.attache-case.themed.theme-light,
+.attache-case-dialog.themed.theme-light,
+.attache-dialog.themed.theme-light {
+  --attache-felt: #5c564f;
+  --attache-felt-deep: #48433d;
+  --attache-line: rgba(255, 255, 255, 0.09);
+  --attache-stitch: rgba(255, 255, 255, 0.28);
+  /* Tiles are opaque raised plates, clearly lighter than the empty lining around them. */
+  --attache-tile: #78716a;
+  --attache-tile-top: #857e76;
+  --attache-tile-hover: #8d857c;
+  --attache-tile-border: rgba(255, 255, 255, 0.24);
+  --attache-tile-border-hover: rgba(255, 255, 255, 0.5);
+  --attache-surface: color-mix(in srgb, var(--color-text-primary, #191813) 5%, transparent);
+  --attache-surface-strong: color-mix(in srgb, var(--color-text-primary, #191813) 9%, transparent);
+}
+
+/* --- Window frame -------------------------------------------------------- */
+
+.attache-case {
+  min-width: 480px;
+  min-height: 320px;
+}
+
+.attache-case .window-content.attache-content {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.attache-case .attache-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- Toolbar ------------------------------------------------------------- */
+
+.attache-case .attache-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--attache-gap);
+  border-bottom: 1px solid var(--attache-border);
+  flex: none;
+}
+
+.attache-case .attache-capacity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--font-size-13, 13px);
+  color: var(--attache-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.attache-case .attache-capacity > i {
+  color: var(--attache-accent);
+}
+
+.attache-case .attache-capacity-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attache-case .attache-meter {
+  display: block;
+  flex: none;
+  width: 96px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--attache-surface-strong);
+  box-shadow: inset 0 0 0 1px var(--attache-surface-strong);
+}
+
+.attache-case .attache-meter-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--pct, 0) * 1%);
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--attache-accent);
+  transition: width 0.25s ease;
+}
+
+.attache-case .attache-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex: none;
+}
+
+.attache-case .attache-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+/* --- Body: main area + side column -------------------------------------- */
+
+.attache-case .attache-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.attache-case .attache-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--attache-gap);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-start;
+  gap: var(--attache-gap);
+  scrollbar-gutter: stable;
+}
+
+.attache-case .attache-side {
+  width: 220px;
+  flex: none;
+  overflow-y: auto;
+  padding: var(--attache-gap);
+  border-left: 1px solid var(--attache-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--attache-gap);
+}
+
+/* --- Panels ------------------------------------------------------------- */
+
+.attache-case .attache-panel {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 12px 12px;
+  border-radius: var(--attache-radius);
+  background: var(--attache-surface);
+  border: 1px solid var(--attache-border);
+}
+
+.attache-case .attache-panel-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 0;
+  max-width: calc(var(--cols) * var(--attache-cell));
+  padding-bottom: 2px;
+  font-size: var(--font-size-13, 13px);
+}
+
+.attache-case .attache-panel-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border: 0;
+  text-align: center;
+  line-height: 20px;
+  color: var(--attache-accent);
+}
+
+.attache-case .attache-panel-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attache-case .attache-panel-dims,
+.attache-case .attache-panel-pct {
+  flex: none;
+  font-size: var(--font-size-11, 11px);
+  color: var(--attache-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.attache-case .attache-panel.is-narrow .attache-panel-dims {
+  display: none;
+}
+
+.attache-case .attache-panel-meter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: var(--attache-surface-strong);
+}
+
+.attache-case .attache-panel-menu {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--attache-text-muted);
+  font-size: var(--font-size-12, 12px);
+  line-height: 22px;
+}
+
+.attache-case .attache-panel-menu:hover,
+.attache-case .attache-panel-menu:focus-visible {
+  color: var(--color-text-primary);
+  background: var(--attache-surface-strong);
+}
+
+/* --- Grid: the case lining ---------------------------------------------- */
+
+.attache-case .attache-grid {
+  position: relative;
+  flex: none;
+  width: calc(var(--cols) * var(--attache-cell));
+  height: calc(var(--rows) * var(--attache-cell));
+  border-radius: 4px;
+  background-color: var(--attache-felt);
+  background-image:
+    linear-gradient(to right, var(--attache-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--attache-line) 1px, transparent 1px),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.07), transparent 70%),
+    linear-gradient(var(--attache-felt), var(--attache-felt-deep));
+  background-size:
+    var(--attache-cell) var(--attache-cell),
+    var(--attache-cell) var(--attache-cell),
+    auto, auto, auto, auto;
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Stitching around the lining. */
+.attache-case .attache-grid::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px dashed var(--attache-stitch);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.attache-case .attache-panel.is-body .attache-grid::after {
+  border-style: dotted;
+}
+
+/* --- Tiles --------------------------------------------------------------- */
+
+.attache-case .attache-tile {
+  position: absolute;
+  left: calc(var(--x) * var(--attache-cell));
+  top: calc(var(--y) * var(--attache-cell));
+  width: calc(var(--w) * var(--attache-cell));
+  height: calc(var(--h) * var(--attache-cell));
+  z-index: 1;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  transition: left 0.14s ease, top 0.14s ease, width 0.14s ease, height 0.14s ease, opacity 0.12s ease;
+}
+
+.attache-case .attache-tile::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 4px;
+  background: linear-gradient(var(--attache-tile-top), var(--attache-tile));
+  border: 1px solid var(--attache-tile-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.attache-case .attache-tile:hover::before {
+  background: linear-gradient(var(--attache-tile-hover), var(--attache-tile-top));
+  border-color: var(--attache-tile-border-hover);
+}
+
+.attache-case .attache-tile:focus-visible::before {
+  border-color: var(--attache-focus);
+  box-shadow: 0 0 0 2px var(--attache-focus), 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.attache-case .attache-tile-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--uw) * var(--attache-cell) - 12px);
+  height: calc(var(--uh) * var(--attache-cell) - 12px);
+  max-width: none;
+  object-fit: contain;
+  border: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  transition: transform 0.16s ease;
+}
+
+.attache-case .attache-tile.is-rotated .attache-tile-art {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.attache-case .attache-tile-name {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #f2efe8;
+  font-size: var(--font-size-10, 10px);
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.attache-case .attache-tile.is-small .attache-tile-name {
+  display: none;
+}
+
+.attache-case .attache-tile.is-dragging {
+  opacity: 0.3;
+}
+
+.attache-case .attache-item.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.attache-case.is-readonly .attache-tile,
+.attache-case.is-readonly .attache-chip {
+  cursor: default;
+}
+
+/* --- Drag preview -------------------------------------------------------- */
+
+.attache-case .attache-footprint {
+  position: absolute;
+  left: calc(var(--x) * var(--attache-cell));
+  top: calc(var(--y) * var(--attache-cell));
+  width: calc(var(--w) * var(--attache-cell));
+  height: calc(var(--h) * var(--attache-cell));
+  z-index: 2;
+  border-radius: 4px;
+  pointer-events: none;
+  transition: left 0.06s linear, top 0.06s linear, width 0.06s linear, height 0.06s linear;
+}
+
+.attache-case .attache-footprint.is-valid {
+  background: color-mix(in srgb, var(--attache-ok) 30%, transparent);
+  box-shadow: inset 0 0 0 2px var(--attache-ok), 0 0 12px color-mix(in srgb, var(--attache-ok) 45%, transparent);
+}
+
+.attache-case .attache-footprint.is-invalid {
+  background: color-mix(in srgb, var(--attache-bad) 30%, transparent);
+  box-shadow: inset 0 0 0 2px var(--attache-bad);
+}
+
+/* The ghost lives in <body>, outside the window. */
+.attache-ghost {
+  --attache-cell: 48px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100000;
+  pointer-events: none;
+  border-radius: 5px;
+  background: rgba(32, 36, 44, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
+  will-change: transform;
+}
+
+.attache-ghost img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--uw) * var(--attache-cell) - 12px);
+  height: calc(var(--uh) * var(--attache-cell) - 12px);
+  max-width: none;
+  object-fit: contain;
+  border: 0;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.14s ease;
+}
+
+.attache-ghost.is-rotated img {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.attache-ghost.is-invalid {
+  border-color: var(--color-level-error, #c0392b);
+}
+
+.attache-ghost.is-returning {
+  opacity: 0.5;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.2s ease, height 0.2s ease, opacity 0.2s ease;
+}
+
+.attache-ghost.is-dropped {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+body.attache-dragging,
+body.attache-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/* --- Side zones: Worn, Unstowed, Not carried ----------------------------- */
+
+.attache-case .attache-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--attache-radius);
+  border: 1px solid var(--attache-border);
+  background: var(--attache-surface);
+  transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.attache-case .attache-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 2px;
+  font-size: var(--font-size-13, 13px);
+  font-weight: 600;
+}
+
+.attache-case .attache-zone-header > i {
+  width: 16px;
+  text-align: center;
+  color: var(--attache-text-muted);
+}
+
+.attache-case .attache-zone-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attache-case .attache-badge {
+  flex: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--attache-bad);
+  color: #fff;
+  font-size: var(--font-size-11, 11px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.attache-case .attache-badge.is-muted {
+  background: var(--attache-surface-strong);
+  color: var(--attache-text-muted);
+}
+
+.attache-case .attache-zone-action {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  font-size: var(--font-size-11, 11px);
+  line-height: 20px;
+}
+
+.attache-case .attache-overflow.has-items {
+  border-color: color-mix(in srgb, var(--attache-bad) 70%, transparent);
+  box-shadow: inset 3px 0 0 var(--attache-bad);
+}
+
+.attache-case .attache-overflow.has-items .attache-zone-header > i {
+  color: var(--attache-bad);
+}
+
+.attache-case .attache-zone.is-drop-target {
+  border-color: var(--attache-ok);
+  background: color-mix(in srgb, var(--attache-ok) 14%, transparent);
+  box-shadow: inset 0 0 0 1px var(--attache-ok);
+}
+
+.attache-case .attache-zone.is-drop-invalid {
+  border-color: var(--attache-bad);
+  background: color-mix(in srgb, var(--attache-bad) 10%, transparent);
+}
+
+.attache-case .attache-excluded > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.attache-case .attache-excluded > summary::-webkit-details-marker {
+  display: none;
+}
+
+.attache-case .attache-excluded:not([open]) .attache-chips {
+  display: none;
+}
+
+.attache-case .attache-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.attache-case .attache-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 3px 6px 3px 3px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--attache-surface-strong);
+  outline: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease, opacity 0.12s ease;
+}
+
+.attache-case .attache-chip.is-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.attache-case .attache-chip:hover {
+  border-color: var(--attache-border);
+}
+
+.attache-case .attache-chip:focus-visible {
+  border-color: var(--attache-focus);
+  box-shadow: 0 0 0 1px var(--attache-focus);
+}
+
+.attache-case .attache-chip.is-dragging {
+  opacity: 0.35;
+}
+
+.attache-case .attache-chip-img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  object-fit: contain;
+  border: 0;
+  border-radius: 3px;
+  background: var(--attache-felt);
+  pointer-events: none;
+}
+
+.attache-case .attache-chip-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-12, 12px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attache-case .attache-chip-size {
+  flex: none;
+  font-size: var(--font-size-11, 11px);
+  color: var(--attache-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Empty states -------------------------------------------------------- */
+
+.attache-case .attache-empty,
+.attache-case-dialog .attache-empty {
+  margin: 0;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: var(--font-size-12, 12px);
+  font-style: italic;
+  color: var(--attache-text-muted);
+}
+
+.attache-case .attache-empty-main {
+  flex: 1;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 0;
+  font-size: var(--font-size-14, 14px);
+}
+
+.attache-case .attache-empty-main > i {
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+/* Tooltip content (rendered by core in the global tooltip element). */
+.attache-tip-meta {
+  margin-top: 2px;
+  font-size: var(--font-size-11, 11px);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Config dialogs ------------------------------------------------------ */
+
+.attache-case-dialog .attache-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attache-case-dialog .is-disabled {
+  opacity: 0.5;
+}
+
+.attache-size-config .attache-size-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+
+.attache-size-config .attache-preview {
+  flex: none;
+  width: 184px;
+  height: 196px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.attache-size-config .attache-preview-grid {
+  --cell: 24px;
+  position: relative;
+  width: calc(var(--w) * var(--cell));
+  height: calc(var(--h) * var(--cell));
+  border-radius: 4px;
+  background-color: var(--attache-felt);
+  background-image:
+    linear-gradient(to right, var(--attache-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--attache-line) 1px, transparent 1px),
+    linear-gradient(var(--attache-felt), var(--attache-felt-deep));
+  background-size: var(--cell) var(--cell), var(--cell) var(--cell), auto;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  transition: width 0.15s ease, height 0.15s ease, opacity 0.15s ease;
+}
+
+.attache-size-config .attache-preview-grid img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
+  border: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+
+.attache-size-config .attache-preview-grid.is-container img {
+  opacity: 0.25;
+}
+
+.attache-size-config .attache-preview-grid.is-excluded {
+  opacity: 0.35;
+}
+
+.attache-size-config .attache-preview-label {
+  font-size: var(--font-size-12, 12px);
+  color: var(--attache-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.attache-size-config .attache-default {
+  flex: 1;
+  margin: 0;
+}
+
+.attache-size-config .attache-reset {
+  width: auto;
+  margin-left: auto;
+  display: flex;
+}
+
+.attache-size-config .attache-legend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* "Use world default (5×3)": give the label room so it stays on one line next to its checkbox. */
+.attache-actor-config .attache-use-default > label {
+  flex: 3;
+}
+
+.attache-actor-config .attache-use-default > .form-fields {
+  flex: 1;
+}
+
+.attache-actor-config .attache-config-containers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.attache-actor-config .attache-config-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 4px;
+  background: var(--attache-surface-strong);
+}
+
+.attache-actor-config .attache-config-container img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border: 0;
+  border-radius: 3px;
+  background: var(--attache-felt);
+}
+
+.attache-actor-config .attache-config-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attache-actor-config .attache-config-container input[type="number"] {
+  flex: none;
+  width: 48px;
+  text-align: center;
+}
+
+.attache-actor-config .attache-times {
+  flex: none;
+  font-size: var(--font-size-10, 10px);
+  color: var(--attache-text-muted);
+}
+
+.attache-actor-config .attache-config-container button {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+}
+
+.attache-actor-config .attache-add-container select {
+  flex: 1;
+}
+
+.attache-actor-config .attache-add-container button {
+  flex: none;
+  width: auto;
+  white-space: nowrap;
+}
+
+/* --- Give dialog --------------------------------------------------------- */
+
+.attache-give .attache-give-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.attache-give .attache-give-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: var(--attache-radius);
+  border: 1px solid var(--attache-border);
+  background: var(--attache-surface);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.attache-give .attache-give-option:hover {
+  background: var(--attache-surface-strong);
+}
+
+.attache-give .attache-give-option:has(input:checked) {
+  border-color: var(--attache-focus);
+  box-shadow: 0 0 0 1px var(--attache-focus);
+}
+
+.attache-give .attache-give-option:has(input:focus-visible) {
+  outline: 2px solid var(--attache-focus);
+  outline-offset: 1px;
+}
+
+.attache-give .attache-give-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.attache-give .attache-give-option img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 0;
+  border-radius: 4px;
+}
+
+.attache-give .attache-give-option span {
+  max-width: 100%;
+  font-size: var(--font-size-12, 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Motion -------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .attache-case *,
+  .attache-case-dialog *,
+  .attache-ghost,
+  .attache-ghost img {
+    transition: none !important;
+  }
+}

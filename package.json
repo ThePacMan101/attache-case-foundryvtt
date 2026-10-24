@@ -1,0 +1,18 @@
+{
+  "name": "attache-case",
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling for the Attaché Case Foundry VTT module. Not needed at runtime.",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint scripts tests",
+    "build:packs": "node dev/build-packs.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@foundryvtt/foundryvtt-cli": "^1.1.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "vitest": "^3.0.0"
+  }
+}

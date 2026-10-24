@@ -1,0 +1,26 @@
+{
+  "_id": "e9Z1Ceqnu1MXXwQ9",
+  "_key": "!items!e9Z1Ceqnu1MXXwQ9",
+  "name": "Coat Pockets",
+  "type": "item",
+  "img": "icons/equipment/back/mantle-collared-black.webp",
+  "system": {
+    "description": {
+      "value": "<p>The deep pockets of an overcoat or field jacket. Room for a handgun and small things.</p><p><em>Attaché Case container: 4 × 2 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 200000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 4,
+        "rows": 2
+      }
+    }
+  }
+}

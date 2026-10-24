@@ -1,0 +1,106 @@
+# Release pipeline. Trigger: publish a GitHub Release whose tag looks like v1.2.3.
+#   1. tests + lint, 2. build compendium packs, 3. package module.json + module.zip (dev/package.sh),
+#   4. attach both files to the GitHub Release,
+#   5. (optional) announce the version to foundryvtt.com through the Package Release API
+#      when the repository secret FOUNDRY_RELEASE_TOKEN exists.
+# Nothing has to be edited by hand: the version comes from the tag, owner/repo from github.repository.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # upload release assets
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Check tag format
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Release tag '$TAG' must look like v1.2.3"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build compendium packs
+        run: npm run build:packs
+
+      - name: Package module.json + module.zip
+        run: sh dev/package.sh
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # --clobber makes "Re-run all jobs" safe.
+        run: gh release upload "$TAG" dist/module.json dist/module.zip --clobber --repo "$REPO"
+
+      # Official docs: https://foundryvtt.com/article/package-release-api/
+      # Skipped when the secret is missing (e.g. before the package was approved) or for pre-releases.
+      - name: Publish version on foundryvtt.com
+        if: ${{ !github.event.release.prerelease }}
+        env:
+          FOUNDRY_RELEASE_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+        run: |
+          if [ -z "$FOUNDRY_RELEASE_TOKEN" ]; then
+            echo "::notice::FOUNDRY_RELEASE_TOKEN is not set; skipping the Foundry Package Release API."
+            exit 0
+          fi
+
+          # The API wants the manifest of THIS release, not the "latest" URL.
+          base="https://github.com/$REPO/releases"
+          jq --arg manifest "$base/download/$TAG/module.json" \
+             --arg notes "$base/tag/$TAG" \
+             '{id: .id,
+               release: {version: .version, manifest: $manifest, notes: $notes,
+                         compatibility: (.compatibility | with_entries(select(.key == "minimum" or .key == "verified" or .key == "maximum")))}}' \
+             dist/module.json > payload.json
+
+          # POST helper: prints the response, fails on anything but HTTP 200, retries once on 429.
+          post() {
+            for attempt in 1 2; do
+              code=$(curl -sS -o response.json -D headers.txt -w '%{http_code}' \
+                -X POST https://foundryvtt.com/_api/packages/release_version/ \
+                -H "Content-Type: application/json" \
+                -H "Authorization: $FOUNDRY_RELEASE_TOKEN" \
+                --data @"$1")
+              cat response.json; echo
+              if [ "$code" = 429 ] && [ "$attempt" = 1 ]; then
+                wait=$(grep -i '^retry-after:' headers.txt | tr -dc '0-9' || true); sleep "${wait:-60}"; continue
+              fi
+              [ "$code" = 200 ] && return 0
+              echo "::error::Foundry Package Release API answered HTTP $code"; return 1
+            done
+          }
+
+          echo "Dry run (validates without saving):"
+          jq '. + {"dry-run": true}' payload.json > dry-run.json
+          post dry-run.json
+          echo "Publishing:"
+          post payload.json

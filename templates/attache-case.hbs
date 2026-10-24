@@ -1,0 +1,103 @@
+<div class="attache-layout">
+  <header class="attache-toolbar">
+    <div class="attache-capacity" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{capacity.pct}}" aria-label="{{capacity.label}}">
+      <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+      <span class="attache-capacity-label">{{capacity.label}}</span>
+      <span class="attache-meter" aria-hidden="true"><span class="attache-meter-fill" style="--pct: {{capacity.pct}}"></span></span>
+    </div>
+    <div class="attache-toolbar-actions">
+      {{#if editable}}
+      <button type="button" class="attache-button" data-action="autoArrange">
+        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>{{localize "ATTACHE.Window.AutoArrange"}}</span>
+      </button>
+      {{/if}}
+      {{#if isGM}}
+      <button type="button" class="attache-button" data-action="configure">
+        <i class="fa-solid fa-gear" aria-hidden="true"></i><span>{{localize "ATTACHE.Window.Configure"}}</span>
+      </button>
+      {{/if}}
+    </div>
+  </header>
+
+  <div class="attache-body">
+    <section class="attache-main">
+      {{#each panels}}
+      <article class="attache-panel{{#if isBody}} is-body{{/if}}{{#if narrow}} is-narrow{{/if}}" style="--cols: {{cols}}; --rows: {{rows}}">
+        <header class="attache-panel-header" data-container-id="{{id}}">
+          {{#if img}}<img class="attache-panel-icon" src="{{img}}" alt="" draggable="false">
+          {{else}}<i class="attache-panel-icon fa-solid fa-person" aria-hidden="true"></i>{{/if}}
+          <span class="attache-panel-name">{{name}}</span>
+          <span class="attache-panel-dims">{{dims}}</span>
+          <span class="attache-panel-pct">{{fillLabel}}</span>
+          <span class="attache-panel-meter" aria-hidden="true"><span class="attache-meter-fill" style="--pct: {{fill}}"></span></span>
+          {{#if menu}}
+          <button type="button" class="attache-panel-menu icon fa-solid fa-ellipsis-vertical" data-container-id="{{id}}"
+                  aria-label="{{localize 'ATTACHE.Menu.Options'}}" data-tooltip="ATTACHE.Menu.Options"></button>
+          {{/if}}
+        </header>
+        <div class="attache-grid" data-container-id="{{id}}">
+          {{#each tiles}}
+          <div class="attache-item attache-tile{{#if r}} is-rotated{{/if}}{{#if small}} is-small{{/if}}" data-item-id="{{id}}" data-kind="tile"
+               tabindex="0" aria-label="{{name}}" data-tooltip-html="{{tooltip}}" data-tooltip-direction="UP"
+               style="--x: {{x}}; --y: {{y}}; --w: {{w}}; --h: {{h}}; --uw: {{uw}}; --uh: {{uh}}">
+            <img class="attache-tile-art" src="{{img}}" alt="" draggable="false">
+            {{#if @root.showNames}}<span class="attache-tile-name">{{name}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </article>
+      {{else}}
+      <p class="attache-empty attache-empty-main">
+        <i class="fa-solid fa-suitcase" aria-hidden="true"></i>
+        <span>{{localize "ATTACHE.Window.NoContainers"}}</span>
+      </p>
+      {{/each}}
+    </section>
+
+    <aside class="attache-side">
+      {{#if worn.enabled}}
+      <section class="attache-zone attache-worn">
+        <header class="attache-zone-header">
+          <i class="fa-solid fa-shirt" aria-hidden="true"></i>
+          <span class="attache-zone-title">{{localize "ATTACHE.Window.Worn"}}</span>
+        </header>
+        <ul class="attache-chips">
+          {{#each worn.items}}{{> "modules/attache-case/templates/item-chip.hbs"}}{{/each}}
+        </ul>
+        {{#unless worn.items.length}}<p class="attache-empty">{{localize "ATTACHE.Window.WornHint"}}</p>{{/unless}}
+      </section>
+      {{/if}}
+
+      <section class="attache-zone attache-overflow{{#if overflow.count}} has-items{{/if}}">
+        <header class="attache-zone-header">
+          <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+          <span class="attache-zone-title">{{localize "ATTACHE.Window.Unstowed"}}</span>
+          {{#if overflow.count}}
+          <span class="attache-badge">{{overflow.count}}</span>
+          {{#if editable}}
+          <button type="button" class="attache-zone-action icon fa-solid fa-arrow-right-to-bracket" data-action="packUnstowed"
+                  aria-label="{{localize 'ATTACHE.Window.Pack'}}" data-tooltip="ATTACHE.Window.Pack"></button>
+          {{/if}}
+          {{/if}}
+        </header>
+        <ul class="attache-chips">
+          {{#each overflow.items}}{{> "modules/attache-case/templates/item-chip.hbs"}}{{/each}}
+        </ul>
+        {{#unless overflow.count}}<p class="attache-empty">{{localize "ATTACHE.Window.Empty"}}</p>{{/unless}}
+      </section>
+
+      {{#if excluded.show}}
+      <details class="attache-zone attache-excluded"{{#if excluded.open}} open{{/if}}>
+        <summary class="attache-zone-header">
+          <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+          <span class="attache-zone-title">{{localize "ATTACHE.Window.Excluded"}}</span>
+          <span class="attache-badge is-muted">{{excluded.items.length}}</span>
+        </summary>
+        <ul class="attache-chips">
+          {{#each excluded.items}}{{> "modules/attache-case/templates/item-chip.hbs"}}{{/each}}
+        </ul>
+      </details>
+      {{/if}}
+    </aside>
+  </div>
+</div>

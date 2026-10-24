@@ -1,0 +1,55 @@
+<div class="attache-config-body">
+  <fieldset>
+    <legend>{{localize "ATTACHE.Window.Body"}}</legend>
+    <div class="form-group attache-use-default">
+      <label for="{{rootId}}-default">{{defaultLabel}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-default" type="checkbox" name="body.useDefault"{{#if body.useDefault}} checked{{/if}}>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-cols">{{localize "ATTACHE.Config.Columns"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-cols" type="number" name="body.cols" value="{{body.cols}}" min="0" max="{{max}}" step="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-rows">{{localize "ATTACHE.Config.Rows"}}</label>
+      <div class="form-fields">
+        <input id="{{rootId}}-rows" type="number" name="body.rows" value="{{body.rows}}" min="0" max="{{max}}" step="1">
+      </div>
+    </div>
+    <p class="hint">{{localize "ATTACHE.Config.BodyHint"}}</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "ATTACHE.Config.Containers"}}</legend>
+    <ul class="attache-config-containers">
+      {{#each containers}}
+      <li class="attache-config-container" data-container-id="{{id}}">
+        <img src="{{img}}" alt="" draggable="false">
+        <a class="attache-config-name" data-action="openContainer">{{name}}</a>
+        <input type="number" name="containers.{{id}}.cols" value="{{cols}}" min="1" max="{{@root.max}}" step="1"
+               aria-label="{{localize 'ATTACHE.Config.Columns'}}" data-tooltip="ATTACHE.Config.Columns">
+        <i class="attache-times fa-solid fa-xmark" aria-hidden="true"></i>
+        <input type="number" name="containers.{{id}}.rows" value="{{rows}}" min="1" max="{{@root.max}}" step="1"
+               aria-label="{{localize 'ATTACHE.Config.Rows'}}" data-tooltip="ATTACHE.Config.Rows">
+        <button type="button" class="icon fa-solid fa-trash" data-action="removeContainer"
+                aria-label="{{localize 'ATTACHE.Menu.RemoveContainer'}}" data-tooltip="ATTACHE.Menu.RemoveContainer"></button>
+      </li>
+      {{else}}
+      <li class="attache-empty">{{localize "ATTACHE.Config.NoContainers"}}</li>
+      {{/each}}
+    </ul>
+    <div class="form-group attache-add-container">
+      <label for="{{rootId}}-preset">{{localize "ATTACHE.Config.AddContainer"}}</label>
+      <div class="form-fields">
+        <select id="{{rootId}}-preset" name="preset">
+          {{#each presets}}<option value="{{key}}">{{label}}</option>{{/each}}
+        </select>
+        <button type="button" class="icon fa-solid fa-plus" data-action="addContainer"
+                aria-label="{{localize 'ATTACHE.Config.AddContainer'}}" data-tooltip="ATTACHE.Config.AddContainer"></button>
+      </div>
+    </div>
+  </fieldset>
+</div>

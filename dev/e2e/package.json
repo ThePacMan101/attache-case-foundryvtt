@@ -1,0 +1,14 @@
+{
+  "name": "attache-case-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Playwright E2E harness for Attaché Case (dev only).",
+  "scripts": {
+    "test": "playwright test",
+    "setup-worlds": "node setup-worlds.mjs",
+    "shot": "node shot.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

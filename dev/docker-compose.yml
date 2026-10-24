@@ -1,0 +1,65 @@
+# Local development stack. Nothing here is shipped with the module.
+# Usage: docker compose -f dev/docker-compose.yml run --rm node npm test
+#        dev/setup.sh            (Foundry + systems + test worlds, see dev/README.md)
+#        dev/e2e/run.sh          (Playwright smoke spec)
+name: attache-case-dev
+
+services:
+  # Node tooling (tests, lint, compendium builds). node_modules lives in a named volume.
+  node:
+    image: node:22-alpine
+    working_dir: /work
+    volumes:
+      - ..:/work
+      - node_modules:/work/node_modules
+    environment:
+      - CI=true
+
+  # Foundry VTT v14 server. Credentials come from the repo-root .env (gitignored).
+  foundry:
+    image: felddy/foundryvtt:14.369
+    hostname: foundry
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      CONTAINER_CACHE: /cache/foundry
+      CONTAINER_CACHE_SIZE: "1"
+      FOUNDRY_TELEMETRY: "false"
+      FOUNDRY_HOT_RELOAD: "true"
+      FOUNDRY_IP_DISCOVERY: "false"
+      FOUNDRY_MINIFY_STATIC_FILES: "false"
+    ports:
+      - "127.0.0.1:${FOUNDRY_HOST_PORT:-30000}:30000"
+    volumes:
+      - ./data:/data
+      - ./cache:/cache
+      # Our module, live from the repo (read-only). Foundry only reads module.json + the listed files.
+      - ..:/data/Data/modules/attache-case:ro
+      # LevelDB needs to write (LOCK, LOG, compaction) even to read a pack, so Foundry gets a
+      # writable copy of packs/ that dev/setup.sh refreshes whenever the repo packs change.
+      - ./data/module-packs:/data/Data/modules/attache-case/packs
+      # Lets helper scripts (dev/install-systems.sh) run inside this image.
+      - ..:/work:ro
+
+  # Playwright runner (E2E specs, screenshots). Foundry is reachable at http://foundry:30000.
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.64.1-noble
+    working_dir: /work/dev/e2e
+    ipc: host
+    init: true
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      FOUNDRY_URL: http://foundry:30000
+      CI: "true"
+      QA_SHOTS: ${QA_SHOTS:-}
+      SAVE_DOCS: ${SAVE_DOCS:-}
+    volumes:
+      - ..:/work
+      - e2e_node_modules:/work/dev/e2e/node_modules
+
+volumes:
+  node_modules:
+  e2e_node_modules:

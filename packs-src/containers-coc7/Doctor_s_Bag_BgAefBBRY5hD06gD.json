@@ -1,0 +1,26 @@
+{
+  "_id": "BgAefBBRY5hD06gD",
+  "_key": "!items!BgAefBBRY5hD06gD",
+  "name": "Doctor's Bag",
+  "type": "item",
+  "img": "icons/containers/bags/pack-leather-black-brown.webp",
+  "system": {
+    "description": {
+      "value": "<p>Hinged leather medical bag. Fits a first aid kit, instruments and a revolver.</p><p><em>Attaché Case container: 6 × 5 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 500000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 6,
+        "rows": 5
+      }
+    }
+  }
+}

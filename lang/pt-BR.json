@@ -1,0 +1,172 @@
+{
+  "ATTACHE": {
+    "Window": {
+      "Title": "Maleta: {actor}",
+      "Body": "No Corpo",
+      "Size": "{w}×{h}",
+      "Fill": "{pct}%",
+      "Capacity": "{used} / {total} espaços ({pct}%)",
+      "AutoArrange": "Organizar",
+      "Configure": "Configurar",
+      "Worn": "Vestido",
+      "WornHint": "Solte a armadura aqui",
+      "Unstowed": "Fora da maleta",
+      "Empty": "Vazio",
+      "Pack": "Guardar itens de fora",
+      "Excluded": "Não carregados",
+      "NoContainers": "Nenhum recipiente"
+    },
+    "Menu": {
+      "OpenCase": "Maleta",
+      "ItemSize": "Tamanho no Inventário",
+      "Open": "Abrir",
+      "OpenSheet": "Abrir Ficha",
+      "Rotate": "Girar",
+      "Stow": "Tirar da maleta",
+      "Wear": "Vestir",
+      "TakeOff": "Tirar",
+      "Give": "Dar para…",
+      "Exclude": "Ignorar",
+      "Include": "Incluir",
+      "MakeContainer": "Tornar Recipiente…",
+      "Delete": "Excluir",
+      "Resize": "Redimensionar…",
+      "RemoveContainer": "Remover Recipiente",
+      "Options": "Opções"
+    },
+    "Config": {
+      "SizeTitle": "Tamanho no Inventário: {name}",
+      "ActorTitle": "Configurar: {actor}",
+      "ResizeTitle": "Redimensionar: {name}",
+      "GiveTitle": "Dar: {name}",
+      "Size": "Tamanho",
+      "Width": "Largura",
+      "Height": "Altura",
+      "Columns": "Colunas",
+      "Rows": "Linhas",
+      "Default": "Padrão: {size} ({source})",
+      "DefaultNone": "Padrão: não ocupa espaço ({source})",
+      "Source": {
+        "Id": "item conhecido",
+        "Name": "nome do item",
+        "Keyword": "palavra-chave",
+        "Type": "tipo do item",
+        "Fallback": "padrão geral",
+        "NonPhysical": "não é item de inventário"
+      },
+      "Reset": "Restaurar Padrão",
+      "Exclude": "Não ocupa espaço",
+      "IsContainer": "Recipiente",
+      "UseDefault": "Usar padrão do mundo ({size})",
+      "BodyHint": "0 colunas ou linhas: sem grade.",
+      "Containers": "Recipientes",
+      "NoContainers": "Nenhum",
+      "AddContainer": "Adicionar Recipiente",
+      "RemoveConfirm": "Remover {name}?",
+      "DeleteConfirm": "Excluir {name}?",
+      "Give": "Dar",
+      "Save": "Salvar",
+      "Cancel": "Cancelar"
+    },
+    "Settings": {
+      "DefaultBodyCols": {
+        "Name": "Colunas da Grade do Corpo",
+        "Hint": "Colunas padrão da grade no corpo. O Mestre pode mudar por ator."
+      },
+      "DefaultBodyRows": {
+        "Name": "Linhas da Grade do Corpo",
+        "Hint": "Linhas padrão da grade no corpo. O Mestre pode mudar por ator."
+      },
+      "AutoPlace": {
+        "Name": "Posicionar Itens Novos",
+        "Hint": "Coloca itens novos no primeiro espaço livre."
+      },
+      "AllowWorn": {
+        "Name": "Armadura Vestida",
+        "Hint": "Armadura vestida não ocupa espaço na grade."
+      },
+      "PlayersCanEditSizes": {
+        "Name": "Jogadores Editam Tamanhos",
+        "Hint": "Jogadores podem mudar o tamanho dos próprios itens."
+      },
+      "CellSize": {
+        "Name": "Tamanho do Espaço",
+        "Hint": "Tamanho de um espaço da grade, em pixels."
+      },
+      "ShowNames": {
+        "Name": "Mostrar Nomes",
+        "Hint": "Mostra os nomes nos itens da grade."
+      },
+      "OpenKey": {
+        "Name": "Abrir Maleta",
+        "Hint": "Seu personagem, ou o ator do token selecionado."
+      }
+    },
+    "Notify": {
+      "NoActor": "Nenhum personagem ou token selecionado.",
+      "Unsupported": "Este sistema de jogo não é suportado.",
+      "NoPermission": "Você não tem permissão para isso.",
+      "NoSpace": "{name} não cabe aí.",
+      "CannotRotate": "{name} não pode ser girado aí.",
+      "DidNotFit": "{name} não coube. Está em Fora da maleta.",
+      "DidNotFitMany": "{count} itens não couberam. Estão em Fora da maleta.",
+      "NotArmor": "Só armaduras podem ser vestidas.",
+      "NotInventory": "{name} não é um item de inventário.",
+      "NoGM": "Nenhum Mestre conectado.",
+      "NoGiveTargets": "Não há ninguém para receber.",
+      "Transferred": "{name} entregue a {actor}.",
+      "TransferFailed": "Não foi possível entregar {name}.",
+      "SaveFailed": "Não foi possível salvar as alterações."
+    },
+    "Preset": {
+      "BeltPouch": {
+        "Name": "Bolsa de Cinto",
+        "Description": "Uma pequena bolsa de couro presa ao cinto. Munição, um isqueiro, algumas chaves."
+      },
+      "CoatPockets": {
+        "Name": "Bolsos do Casaco",
+        "Description": "Os bolsos fundos de um sobretudo ou jaqueta de campo. Cabe uma arma curta e coisas pequenas."
+      },
+      "TacticalVest": {
+        "Name": "Colete Tático",
+        "Description": "Colete de carga com porta-carregadores e bolsos utilitários. Tudo ao alcance da mão."
+      },
+      "Satchel": {
+        "Name": "Bolsa a Tiracolo",
+        "Description": "Bolsa de ombro para cadernos, uma câmera e o essencial do dia."
+      },
+      "DoctorsBag": {
+        "Name": "Maleta de Médico",
+        "Description": "Maleta médica de couro com fecho. Cabe um kit de primeiros socorros, instrumentos e um revólver."
+      },
+      "AttacheCase": {
+        "Name": "Maleta Attaché",
+        "Description": "Uma maleta rígida forrada de espuma. Bem organizada, leva um fuzil e armas curtas."
+      },
+      "Backpack": {
+        "Name": "Mochila",
+        "Description": "Mochila comum de lona ou náilon. Cabe uma espingarda, mas não um fuzil inteiro."
+      },
+      "GunCase": {
+        "Name": "Case de Armas",
+        "Description": "Estojo rígido e comprido para fuzis e espingardas. Sobra pouco espaço para outras coisas."
+      },
+      "Suitcase": {
+        "Name": "Mala de Viagem",
+        "Description": "Mala de viagem. Muito espaço, mas demorada de abrir com pressa."
+      },
+      "MilitaryRucksack": {
+        "Name": "Mochila Militar",
+        "Description": "Mochila de campanha com armação, para operações longas e expedições."
+      },
+      "DuffelBag": {
+        "Name": "Bolsa de Lona",
+        "Description": "Bolsa cilíndrica e comprida. Cabe armas longas e muito equipamento."
+      },
+      "SteamerTrunk": {
+        "Name": "Baú de Viagem",
+        "Description": "Baú pesado para expedições. Não é algo para carregar correndo."
+      }
+    }
+  }
+}

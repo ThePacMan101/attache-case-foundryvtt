@@ -1,0 +1,26 @@
+{
+  "_id": "uriXHE3T9wzDoTVH",
+  "_key": "!items!uriXHE3T9wzDoTVH",
+  "name": "Military Rucksack",
+  "type": "item",
+  "img": "icons/containers/bags/pack-leather-brown.webp",
+  "system": {
+    "description": {
+      "value": "<p>Framed field pack for long operations and expeditions.</p><p><em>Attaché Case container: 10 × 7 cells.</em></p>"
+    }
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 1000000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 10,
+        "rows": 7
+      }
+    }
+  }
+}
