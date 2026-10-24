@@ -28,7 +28,7 @@ In Foundry's setup screen: **Add-on Modules → Install Module**, paste this URL
 and click **Install**:
 
 ```
-https://github.com/OWNER/attache-case/releases/latest/download/module.json
+https://github.com/ThePacMan101/attache-case-foundryvtt/releases/latest/download/module.json
 ```
 
 Then enable **Attaché Case** in your world (**Game Settings → Manage Modules**).

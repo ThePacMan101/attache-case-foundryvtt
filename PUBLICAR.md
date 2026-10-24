@@ -14,7 +14,10 @@ só o passo 7.
 6. Instalar no seu Foundry e compartilhar o link.
 7. Versões futuras.
 
-Onde aparecer `SEU_USUARIO`, troque pelo seu nome de usuário do GitHub.
+> **Situação atual:** os passos 1 a 3 **já foram feitos**. O repositório é
+> <https://github.com/ThePacMan101/attache-case-foundryvtt> (enviado por SSH) e os links do projeto
+> já apontam para ele. **Comece pelo passo 4.** Os passos 1 a 3 ficam aqui só como referência.
+
 Os comandos são colados no terminal do WSL (Arch Linux), onde o projeto está.
 
 ---
@@ -114,7 +117,7 @@ Enter.
 > `git config --global credential.helper store`. O token fica guardado num arquivo do seu computador
 > (`~/.git-credentials`).
 
-Abra `https://github.com/SEU_USUARIO/attache-case` no navegador: os arquivos devem estar lá, com as
+Abra `https://github.com/ThePacMan101/attache-case-foundryvtt` no navegador: os arquivos devem estar lá, com as
 imagens do módulo no texto da página.
 
 Na aba **Actions** do repositório aparece um item **CI** rodando (testes automáticos, uns 2 minutos).
@@ -146,11 +149,11 @@ compêndios → cria `module.zip` e `module.json` → anexa os dois ao release.
    (Uma nota amarela dizendo `FOUNDRY_RELEASE_TOKEN is not set` é **normal**: é a parte opcional da
    lista oficial, veja o fim deste guia.)
 2. Na página do release, em **Assets**, aparecem `module.json` e `module.zip`.
-3. Abra este link no navegador (troque `SEU_USUARIO`). Ele deve mostrar um texto com
+3. Abra este link no navegador. Ele deve mostrar um texto com
    `"version": "1.0.0"`:
 
    ```
-   https://github.com/SEU_USUARIO/attache-case/releases/latest/download/module.json
+   https://github.com/ThePacMan101/attache-case-foundryvtt/releases/latest/download/module.json
    ```
 
    **Esta é a URL do manifesto.** É ela que você vai usar e compartilhar.
@@ -166,7 +169,7 @@ agentes para corrigir. Depois:
    git push
    ```
 2. Apague o release com problema: abra o release → ícone de lixeira (**Delete**).
-3. Apague a tag: abra `https://github.com/SEU_USUARIO/attache-case/tags`, clique em `v1.0.0` →
+3. Apague a tag: abra `https://github.com/ThePacMan101/attache-case-foundryvtt/tags`, clique em `v1.0.0` →
    **Delete**.
 4. Refaça o passo 4.
 
@@ -193,7 +196,7 @@ Se você já tiver uma pasta `attache-case` de testes em `Data/modules`, desinst
 mundo.
 
 **Para outros mestres:** mande a URL do manifesto. Eles fazem os passos 1 a 5 acima no Foundry deles.
-Você também pode mandar o link da página: `https://github.com/SEU_USUARIO/attache-case` (o texto de
+Você também pode mandar o link da página: `https://github.com/ThePacMan101/attache-case-foundryvtt` (o texto de
 lá explica tudo em inglês).
 
 ---

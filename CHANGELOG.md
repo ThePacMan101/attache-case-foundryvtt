@@ -40,5 +40,5 @@ First release. Requires Foundry VTT 14.359 or later (tested on 14.369) with Call
 - Light and dark theme support; English and Brazilian Portuguese.
 - API at `game.modules.get("attache-case").api`: `open`, `getLayout`, `registerSizes`, `presets`.
 
-[Unreleased]: https://github.com/OWNER/attache-case/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/OWNER/attache-case/releases/tag/v1.0.0
+[Unreleased]: https://github.com/ThePacMan101/attache-case-foundryvtt/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/ThePacMan101/attache-case-foundryvtt/releases/tag/v1.0.0
