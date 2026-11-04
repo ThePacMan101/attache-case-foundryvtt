@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eBackpack005",
+  "_key": "!items!dnd5eBackpack005",
+  "name": "Backpack",
+  "type": "container",
+  "img": "icons/containers/bags/pack-leather-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>The adventurer's pack. Takes all but the longest weapons.</p><p><em>Backpack container: 8 × 6 cells.</em></p>"
+    },
+    "weight": {
+      "value": 5,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 30,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 500000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 8,
+        "rows": 6
+      }
+    }
+  }
+}

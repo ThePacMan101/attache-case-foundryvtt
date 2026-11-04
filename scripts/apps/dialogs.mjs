@@ -4,6 +4,7 @@
 
 import { MAX_DIM } from "../constants.mjs";
 import { canGiveTo } from "../foundry/inventory.mjs";
+import { displayName } from "../foundry/system-adapter.mjs";
 import { loc, notify } from "../foundry/util.mjs";
 
 const { DialogV2 } = foundry.applications.api;
@@ -72,7 +73,7 @@ export async function promptGiveTarget(item) {
       <span>${esc(a.name)}</span>
     </label>`).join("");
   const result = await DialogV2.wait({
-    window: { title: loc("ATTACHE.Config.GiveTitle", { name: item.name }), icon: "fa-solid fa-hand-holding" },
+    window: { title: loc("ATTACHE.Config.GiveTitle", { name: displayName(item) }), icon: "fa-solid fa-hand-holding" },
     classes: ["attache-dialog", "attache-give"],
     content: `<div class="attache-give-list">${options}</div>`,
     buttons: [

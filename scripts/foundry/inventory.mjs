@@ -9,7 +9,7 @@ import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
 import { buildLayout, findSpot, canMove, withPlacement, autoArrange as arrange } from "../core/layout.mjs";
 import { explainSize, isContainer, sanitizeContainer, sanitizeSize, mergeRegistries } from "../core/sizes.mjs";
 import { footprint } from "../core/grid.mjs";
-import { describe, isArmor, isSupportedActor, moduleFlags, containerItemData, containerPresets, canEditArt, cleanArt } from "./system-adapter.mjs";
+import { describe, displayName, isArmor, isSupportedActor, moduleFlags, containerItemData, containerPresets, canEditArt, cleanArt } from "./system-adapter.mjs";
 import { defaultBody, wornEnabled } from "../settings.mjs";
 import { loc, notify, deletion, flagPath } from "./util.mjs";
 
@@ -23,7 +23,10 @@ const registryListeners = new Set();
 
 /** @returns {object} the effective size registry (defaults + registered extensions) */
 export function registry() {
-  mergedRegistry ??= extraRegistries.length ? mergeRegistries(DEFAULT_REGISTRY, ...extraRegistries) : DEFAULT_REGISTRY;
+  // A third party's `byName` also goes first by itself: see `nameOverrides` in core/sizes.mjs.
+  mergedRegistry ??= extraRegistries.length
+    ? { ...mergeRegistries(DEFAULT_REGISTRY, ...extraRegistries), nameOverrides: mergeRegistries(...extraRegistries).byName }
+    : DEFAULT_REGISTRY;
   return mergedRegistry;
 }
 
@@ -147,7 +150,7 @@ export function getState(actor) {
 export function getLayout(actor) {
   const s = getState(actor);
   return {
-    containers: s.containers.map(({ id, cols, rows, item }) => ({ id, cols, rows, name: item?.name ?? loc("ATTACHE.Window.Body") })),
+    containers: s.containers.map(({ id, cols, rows, item }) => ({ id, cols, rows, name: item ? displayName(item) : loc("ATTACHE.Window.Body") })),
     placed: Object.fromEntries([...s.layout.placed].map(([id, p]) => [id, { ...p }])),
     overflow: [...s.layout.overflow],
     worn: s.worn.map((i) => i.id),
@@ -262,7 +265,7 @@ export async function wearItem(actor, itemId) {
   const item = actor.items.get(itemId);
   if (!item || !wornEnabled()) return false;
   if (!isArmor(item)) {
-    notify("warn", "ATTACHE.Notify.NotArmor", { name: item.name });
+    notify("warn", "ATTACHE.Notify.NotArmor", { name: displayName(item) });
     return false;
   }
   if (isWorn(item)) return true;
@@ -283,7 +286,7 @@ export async function takeOffItem(actor, itemId) {
   const { size } = itemSize(item);
   const state = getState(actor);
   const spot = size ? findSpot(state.layout, null, size) : null;
-  if (!spot) notify("info", "ATTACHE.Notify.DidNotFit", { name: item.name });
+  if (!spot) notify("info", "ATTACHE.Notify.DidNotFit", { name: displayName(item) });
   await applyUpdates(actor, [placementUpdate(item, spot)]);
 }
 
@@ -300,7 +303,7 @@ export async function rotateInPlace(actor, itemId) {
   const entry = state.entries.get(itemId);
   if (!item || !entry) return false;
   if (!placed) {
-    notify("warn", "ATTACHE.Notify.CannotRotate", { name: item.name });
+    notify("warn", "ATTACHE.Notify.CannotRotate", { name: displayName(item) });
     return false;
   }
   const { size } = entry;
@@ -321,7 +324,7 @@ export async function rotateInPlace(actor, itemId) {
       return true;
     }
   }
-  notify("warn", "ATTACHE.Notify.CannotRotate", { name: item.name });
+  notify("warn", "ATTACHE.Notify.CannotRotate", { name: displayName(item) });
   return false;
 }
 
@@ -441,14 +444,14 @@ export async function addFromDrop(actor, dropData, target) {
       const { size } = itemSize(source);
       const pos = size && choosePlacement(getState(actor).layout, size, target.pos, source.id);
       if (pos && pos.c === target.pos.c && pos.x === target.pos.x && pos.y === target.pos.y) await moveItem(actor, source.id, pos);
-      else notify("warn", "ATTACHE.Notify.NoSpace", { name: source.name });
+      else notify("warn", "ATTACHE.Notify.NoSpace", { name: displayName(source) });
     }
     return source;
   }
 
   const info = itemSize(source);
   if (!info.size && !info.container && !info.excluded) {
-    notify("warn", "ATTACHE.Notify.NotInventory", { name: source.name });
+    notify("warn", "ATTACHE.Notify.NotInventory", { name: displayName(source) });
     return null;
   }
   const data = source.pack || !source.parent
@@ -457,7 +460,7 @@ export async function addFromDrop(actor, dropData, target) {
   const { pos, worn } = resolveIncoming(actor, data, target);
   const [created] = await actor.createEmbeddedDocuments("Item", [copyData(data, { pos, worn })], ownCreate());
   if (created && info.size && !pos && !worn && target.kind !== "overflow") {
-    notify("info", "ATTACHE.Notify.DidNotFit", { name: created.name });
+    notify("info", "ATTACHE.Notify.DidNotFit", { name: displayName(created) });
   }
   return created ?? null;
 }
@@ -519,7 +522,7 @@ export async function transferItem(item, targetActor, target = { kind: "auto" })
     notify("warn", "ATTACHE.Notify.NoPermission");
     return false;
   }
-  const name = item.name;
+  const name = displayName(item);
   try {
     if (targetActor.isOwner) {
       await executeTransfer(item, targetActor, target);
@@ -648,7 +651,7 @@ export async function addPresetContainer(actor, key) {
   const preset = containerPresets().find((p) => p.key === key);
   if (!preset) return null;
   const data = containerItemData({
-    name: loc(preset.name), description: loc(preset.description), img: preset.img, cols: preset.cols, rows: preset.rows
+    name: loc(preset.name), description: loc(preset.description), img: preset.img, cols: preset.cols, rows: preset.rows, system: preset.system
   });
   if (!data) return null;
   data.sort = nextContainerSort(actor);

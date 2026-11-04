@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eSaddlebag04",
+  "_key": "!items!dnd5eSaddlebag04",
+  "name": "Saddlebags",
+  "type": "container",
+  "img": "icons/containers/bags/pack-leather-strapped-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>A pair of bags slung over a mount. Takes a long weapon.</p><p><em>Saddlebags container: 8 × 5 cells.</em></p>"
+    },
+    "weight": {
+      "value": 8,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 30,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 400000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 8,
+        "rows": 5
+      }
+    }
+  }
+}

@@ -14,7 +14,8 @@
       "Empty": "Vazio",
       "Pack": "Guardar itens de fora",
       "Excluded": "Não carregados",
-      "NoContainers": "Nenhum recipiente"
+      "NoContainers": "Nenhum recipiente",
+      "Unidentified": "Item Não Identificado"
     },
     "Menu": {
       "OpenCase": "Maleta",
@@ -54,7 +55,11 @@
         "Keyword": "palavra-chave",
         "Type": "tipo do item",
         "Fallback": "padrão geral",
-        "NonPhysical": "não é item de inventário"
+        "NonPhysical": "não é item de inventário",
+        "NoSpace": "não é um objeto",
+        "BaseName": "item-base",
+        "Subtype": "subtipo do item",
+        "Weight": "peso do item"
       },
       "Reset": "Restaurar Padrão",
       "Exclude": "Não ocupa espaço",
@@ -129,7 +134,8 @@
       "SaveFailed": "Não foi possível salvar as alterações.",
       "InvalidArt": "Esse não é um caminho de imagem válido.",
       "NoCustomBodies": "Nenhum ator tem tamanho personalizado.",
-      "BodiesCleared": "Tamanhos personalizados removidos: {count}."
+      "BodiesCleared": "Tamanhos personalizados removidos: {count}.",
+      "UnsupportedActor": "Este tipo de ator não é suportado."
     },
     "Preset": {
       "BeltPouch": {
@@ -179,6 +185,38 @@
       "SteamerTrunk": {
         "Name": "Baú de Viagem",
         "Description": "Baú pesado para expedições. Não é algo para carregar correndo."
+      },
+      "FantasyPouch": {
+        "Name": "Algibeira",
+        "Description": "Uma bolsa de couro presa ao cinto. Moedas, algumas poções, coisas pequenas."
+      },
+      "FantasySack": {
+        "Name": "Saco",
+        "Description": "Um saco simples de pano. Espaçoso, mas nada comprido cabe nele."
+      },
+      "FantasyBasket": {
+        "Name": "Cesto",
+        "Description": "Um cesto trançado com alça. Bom para comida e mercadorias leves."
+      },
+      "FantasySaddlebags": {
+        "Name": "Alforjes",
+        "Description": "Um par de bolsas sobre a montaria. Leva uma arma comprida."
+      },
+      "FantasyBackpack": {
+        "Name": "Mochila",
+        "Description": "A mochila do aventureiro. Leva tudo menos as armas mais compridas."
+      },
+      "FantasyBarrel": {
+        "Name": "Barril",
+        "Description": "Um barril de madeira. Guarda muita coisa e não é fácil de carregar."
+      },
+      "FantasyChest": {
+        "Name": "Baú",
+        "Description": "Um baú pesado e reforçado. Guarda de tudo, até pique e lança."
+      },
+      "FantasyBagOfHolding": {
+        "Name": "Bolsa de Contenção",
+        "Description": "Maior por dentro do que por fora, e seu conteúdo não pesa nada."
       }
     }
   }

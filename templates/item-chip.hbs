@@ -2,5 +2,6 @@
     tabindex="0" aria-label="{{name}}" data-tooltip-html="{{tooltip}}" data-tooltip-direction="LEFT">
   <img class="attache-chip-img" src="{{art.src}}" data-fallback="{{art.fallback}}" alt="" draggable="false">
   <span class="attache-chip-name">{{name}}</span>
+  {{#if qty}}<span class="attache-qty">{{qty}}</span>{{/if}}
   {{#if size}}<span class="attache-chip-size">{{size}}</span>{{/if}}
 </li>

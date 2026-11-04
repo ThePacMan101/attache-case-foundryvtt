@@ -6,8 +6,10 @@
 
 import { MODULE_ID, FLAGS, DEFAULT_BODY } from "../constants.mjs";
 import { resolveArt, sanitizeArt } from "../core/art.mjs";
-import { CONTAINER_PRESETS } from "../data/container-presets.mjs";
+import { describeDnd5e } from "../core/dnd5e.mjs";
+import { CONTAINER_PRESETS, DND5E_PRESETS } from "../data/container-presets.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
+import { loc } from "./util.mjs";
 
 /**
  * @typedef {object} SystemProfile
@@ -23,10 +25,10 @@ import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
  * @property {string[]} [visibleSystemKeys] `system.*` keys whose change re-renders the case
  * @property {(item: Item, user: User) => boolean} [concealsArt] whether this user must not see the
  *   item's chosen image; unset = never
+ * @property {(item: Item) => object} [describeExtras] extra size descriptor fields (core/sizes.mjs)
+ * @property {(item: Item) => number} [quantity] stack size for the badge; unset = no stacks
+ * @property {(item: Item, user: User) => string} [displayName] the name this user sees; unset = `item.name`
  */
-
-/** Temporary dnd5e list, chosen from the modern presets until the fantasy list arrives. */
-const DND5E_PRESET_KEYS = new Set(["beltPouch", "satchel", "backpack", "duffelBag"]);
 
 /** @type {Readonly<Record<string, SystemProfile>>} */
 const PROFILES = Object.freeze({
@@ -55,9 +57,16 @@ const PROFILES = Object.freeze({
     describe: (description) => ({ description: { value: description } }),
     coreId: () => null,
     defaultBody: Object.freeze({ cols: 8, rows: 5 }),
-    presets: CONTAINER_PRESETS.filter((p) => DND5E_PRESET_KEYS.has(p.key)),
+    presets: DND5E_PRESETS,
     actorTypes: ["character", "npc", "vehicle"],
-    visibleSystemKeys: ["identified"],
+    visibleSystemKeys: ["container", "equipped", "quantity", "identified", "weight", "type", "capacity", "unidentified", "properties"],
+    describeExtras: describeDnd5e,
+    quantity: (item) => (Number.isInteger(item?.system?.quantity) ? item.system.quantity : 1),
+    // dnd5e swaps `item.name` for a filled unidentified name, for everyone. An empty one leaves the real name
+    // in `item.name`, which a player must not read here.
+    displayName: (item, user) => (!user?.isGM && item?.system?.identified === false && !item.system.unidentified?.name
+      ? loc("ATTACHE.Window.Unidentified")
+      : item?.name ?? ""),
     // A chosen image could name an item the player has not identified. dnd5e shows `item.img` to
     // everyone, so that one is not a new leak.
     concealsArt: (item, user) => !user?.isGM && item?.system?.identified === false
@@ -157,6 +166,36 @@ export function displayImg(item, user = game.user) {
 }
 
 /**
+ * The name a user sees for an item.
+ * @param {Item|object} item
+ * @param {User} [user]
+ * @returns {string}
+ */
+export function displayName(item, user = game.user) {
+  const custom = profile()?.displayName;
+  return custom ? custom(item, user) : item?.name ?? "";
+}
+
+/**
+ * How many of this item the stack holds; 1 on systems without stacks. Never changes its size.
+ * @param {Item|object} item
+ * @returns {number}
+ */
+export function itemQuantity(item) {
+  return profile()?.quantity?.(item) ?? 1;
+}
+
+/**
+ * A stack's number as its badge shows it: at most 3 characters, so that it stays inside a one-cell tile.
+ * @param {number} quantity
+ * @returns {string}
+ */
+export function quantityLabel(quantity) {
+  if (quantity < 1000) return String(quantity);
+  return quantity < 1000000 ? `${Math.floor(quantity / 1000)}k` : `${Math.floor(quantity / 1000000)}M`;
+}
+
+/**
  * Whether a user may choose an item's image: whoever owns the item, unless its current image is
  * concealed from them (the dialog would show the path, and saving would overwrite it).
  * @param {Item} item
@@ -172,7 +211,7 @@ export function canEditArt(item, user = game.user) {
  * Build the core size descriptor for an Item document or raw item data.
  * @param {Item|object} item
  * @returns {{type:string, name:string, systemId:string, sourceId:string|null, coreId:string|null,
- *   flags:{size?:object, excluded?:boolean, container?:object}}}
+ *   flags:{size?:object, excluded?:boolean, container?:object}}} plus the profile's `describeExtras`
  */
 export function describe(item) {
   const flags = moduleFlags(item);
@@ -186,23 +225,24 @@ export function describe(item) {
       size: flags[FLAGS.SIZE],
       excluded: flags[FLAGS.EXCLUDED],
       container: flags[FLAGS.CONTAINER]
-    }
+    },
+    ...profile()?.describeExtras?.(item)
   };
 }
 
 /**
  * Creation data for a container item of the active system.
- * @param {{name:string, description?:string, img?:string, cols:number, rows:number}} spec
- *   name/description already localized
+ * @param {{name:string, description?:string, img?:string, cols:number, rows:number, system?:object}} spec
+ *   name/description already localized; `system` is what a preset adds to the item's data
  * @returns {object|null} null on unsupported systems
  */
-export function containerItemData({ name, description = "", img, cols, rows }) {
+export function containerItemData({ name, description = "", img, cols, rows, system }) {
   const p = profile();
   if (!p) return null;
   const data = {
     name,
     type: p.containerType,
-    system: p.describe(description ? `<p>${foundry.utils.escapeHTML(description)}</p>` : ""),
+    system: { ...p.describe(description ? `<p>${foundry.utils.escapeHTML(description)}</p>` : ""), ...foundry.utils.deepClone(system) },
     flags: { [MODULE_ID]: { [FLAGS.CONTAINER]: { cols, rows } } }
   };
   if (img) data.img = img;

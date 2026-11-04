@@ -42,6 +42,7 @@
                style="--x: {{x}}; --y: {{y}}; --w: {{w}}; --h: {{h}}; --uw: {{uw}}; --uh: {{uh}}">
             <img class="attache-tile-art" src="{{art.src}}" data-fallback="{{art.fallback}}" alt="" draggable="false">
             {{#if @root.showNames}}<span class="attache-tile-name">{{name}}</span>{{/if}}
+            {{#if qty}}<span class="attache-qty">{{qty}}</span>{{/if}}
           </div>
           {{/each}}
         </div>

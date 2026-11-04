@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eBarrel00006",
+  "_key": "!items!dnd5eBarrel00006",
+  "name": "Barrel",
+  "type": "container",
+  "img": "icons/containers/barrels/barrel-oak-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>A wooden barrel. Holds a lot, and is not easy to carry.</p><p><em>Barrel container: 8 × 8 cells.</em></p>"
+    },
+    "weight": {
+      "value": 70,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 334,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 600000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 8,
+        "rows": 8
+      }
+    }
+  }
+}

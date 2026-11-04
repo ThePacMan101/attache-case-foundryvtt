@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eBasket00003",
+  "_key": "!items!dnd5eBasket00003",
+  "name": "Basket",
+  "type": "container",
+  "img": "icons/containers/misc/basket-handle-woven-yellow.webp",
+  "system": {
+    "description": {
+      "value": "<p>A woven basket with a handle. Good for food and light goods.</p><p><em>Basket container: 6 × 5 cells.</em></p>"
+    },
+    "weight": {
+      "value": 2,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 40,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 300000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 6,
+        "rows": 5
+      }
+    }
+  }
+}

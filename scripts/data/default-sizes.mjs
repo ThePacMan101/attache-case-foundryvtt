@@ -1,7 +1,7 @@
 /**
- * Default item footprints for Call of Cthulhu 7e (`CoC7`) and Delta Green (`deltagreen`).
- * Pure data, consumed by scripts/core/sizes.mjs (see its JSDoc for the registry shape and the
- * lookup precedence: byId -> byName -> keywords -> byType).
+ * Default item footprints for Call of Cthulhu 7e (`CoC7`) and Delta Green (`deltagreen`), plus the
+ * dnd5e fragment of default-sizes-dnd5e.mjs. Pure data, consumed by scripts/core/sizes.mjs (see its
+ * JSDoc for the registry shape and the lookup precedence).
  *
  * Scale: one cell is roughly a 10 cm "hand-sized" square, Resident Evil 4 attaché case style.
  * Long objects are defined horizontally (w > h); players rotate them when packing.
@@ -15,6 +15,8 @@
  *   plus the 4 weapons embedded in the `en-examples.yaml` actors that carry a CoC id.
  * - Delta Green `packs/source/{firearms,hand-to-hand-weapons,armor}` (10 + 17 + 6 items).
  */
+
+import { DND5E_SIZES } from "./default-sizes-dnd5e.mjs";
 
 const EXCLUDED = "excluded";
 
@@ -272,7 +274,9 @@ const DG_BY_NAME = {
  */
 const WEAPON = ["weapon"];
 
-const k = (pattern, size, types) => (types ? { pattern, size, types } : { pattern, size });
+// Written for the CoC7 and Delta Green scale; dnd5e has its own set. Only a third party's keywords are global.
+const SYSTEMS = Object.freeze(["CoC7", "deltagreen"]);
+const k = (pattern, size, types) => (types ? { systems: SYSTEMS, pattern, size, types } : { systems: SYSTEMS, pattern, size });
 
 const KEYWORDS = [
   // --- Not objects: natural and improvised attacks --------------------------------------------
@@ -453,7 +457,10 @@ const byType = {
 export const DEFAULT_REGISTRY = Object.freeze({
   physicalTypes,
   byId: { CoC7: COC7_BY_ID, deltagreen: DG_BY_ID },
-  byName: { CoC7: COC7_BY_NAME, deltagreen: DG_BY_NAME },
-  keywords: KEYWORDS,
+  byName: { CoC7: COC7_BY_NAME, deltagreen: DG_BY_NAME, ...DND5E_SIZES.byName },
+  keywords: [...KEYWORDS, ...DND5E_SIZES.keywords],
+  baseNames: DND5E_SIZES.baseNames,
+  bySubtype: DND5E_SIZES.bySubtype,
+  weightBands: DND5E_SIZES.weightBands,
   byType
 });

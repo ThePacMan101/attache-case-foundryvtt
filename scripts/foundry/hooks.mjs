@@ -6,7 +6,7 @@
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
 import { canMove, findSpot, withPlacement } from "../core/layout.mjs";
-import { canEditArt, isSupportedActor, isSupportedSystem, moduleFlags, profile } from "./system-adapter.mjs";
+import { canEditArt, displayName, isSupportedActor, isSupportedSystem, moduleFlags, profile } from "./system-adapter.mjs";
 import { getState, itemSize, isWorn, packUnstowed } from "./inventory.mjs";
 import { autoPlaceEnabled, canEditSizes } from "../settings.mjs";
 import { loc, notify, flagPath } from "./util.mjs";
@@ -87,7 +87,7 @@ function reportUnplaced(actor, item) {
       else notify("info", "ATTACHE.Notify.DidNotFitMany", { count: entry.names.length });
     }, 50);
   }
-  entry.names.push(item.name);
+  entry.names.push(displayName(item));
 }
 
 function onCreateItem(item, options, userId) {

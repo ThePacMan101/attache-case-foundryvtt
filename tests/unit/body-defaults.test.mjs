@@ -10,7 +10,7 @@ const svc = await import("../../scripts/foundry/inventory.mjs");
 const { registerHooks } = await import("../../scripts/foundry/hooks.mjs");
 const { ResetBodies, resetBodies, registerResetBodiesMenu } = await import("../../scripts/apps/reset-bodies.mjs");
 const { AttacheCaseApp } = await import("../../scripts/apps/attache-case-app.mjs");
-const { CONTAINER_PRESETS } = await import("../../scripts/data/container-presets.mjs");
+const { CONTAINER_PRESETS, DND5E_PRESETS } = await import("../../scripts/data/container-presets.mjs");
 const { DEFAULT_REGISTRY } = await import("../../scripts/data/default-sizes.mjs");
 
 const M = "attache-case";
@@ -291,11 +291,11 @@ describe("dnd5e skeleton", () => {
     });
   });
 
-  it("offers a short subset of the presets, and only those can be added", async () => {
+  it("offers its own short list of presets, and only those can be added", async () => {
     const list = adapter.containerPresets();
     expect(list.length).toBeGreaterThan(0);
     expect(list.length).toBeLessThan(CONTAINER_PRESETS.length);
-    for (const p of list) expect(CONTAINER_PRESETS).toContain(p);
+    expect(list).toBe(DND5E_PRESETS);
     const actor = env.addActor({ type: "character" });
     const left = CONTAINER_PRESETS.find((p) => !list.includes(p));
     expect(await svc.addPresetContainer(actor, left.key)).toBeNull();

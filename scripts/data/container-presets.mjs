@@ -17,18 +17,27 @@
  * @property {number} cols
  * @property {number} rows
  * @property {string} img          core Foundry icon path
+ * @property {object} [system]      `system` data of the created item, also what the compendium's bag holds
  */
 
 /** @param {string} key camelCase key @returns {string} PascalCase i18n segment */
 const i18nKey = (key) => key.charAt(0).toUpperCase() + key.slice(1);
 
-const preset = (key, cols, rows, img) => Object.freeze({
+const preset = (key, cols, rows, img, system) => Object.freeze({
   key,
   name: `ATTACHE.Preset.${i18nKey(key)}.Name`,
   description: `ATTACHE.Preset.${i18nKey(key)}.Description`,
   cols,
   rows,
-  img
+  img,
+  ...(system ? { system } : {})
+});
+
+/** dnd5e's data for a bag: its own weight and what it holds, in pounds. */
+const dnd5eBag = (weight, capacity, properties = []) => ({
+  weight: { value: weight, units: "lb" },
+  capacity: { weight: { value: capacity, units: "lb" } },
+  properties
 });
 
 /** @type {ReadonlyArray<ContainerPreset>} smallest to largest */
@@ -45,6 +54,21 @@ export const CONTAINER_PRESETS = Object.freeze([
   preset("militaryRucksack", 10, 7, "icons/containers/bags/pack-leather-brown.webp"),
   preset("duffelBag", 12, 6, "icons/containers/bags/sack-cloth-green-blue.webp"),
   preset("steamerTrunk", 14, 8, "icons/containers/chest/chest-reinforced-steel-red.webp")
+]);
+
+/**
+ * dnd5e's list: the bags of the rules, with the grids `bagDims` gives the same bag (core/dnd5e.mjs).
+ * @type {ReadonlyArray<ContainerPreset>} smallest to largest
+ */
+export const DND5E_PRESETS = Object.freeze([
+  preset("fantasyPouch", 3, 2, "icons/containers/bags/pouch-leather-green.webp", dnd5eBag(1, 6)),
+  preset("fantasySack", 6, 4, "icons/containers/bags/sack-simple-leather-tan.webp", dnd5eBag(0.5, 30)),
+  preset("fantasyBasket", 6, 5, "icons/containers/misc/basket-handle-woven-yellow.webp", dnd5eBag(2, 40)),
+  preset("fantasySaddlebags", 8, 5, "icons/containers/bags/pack-leather-strapped-tan.webp", dnd5eBag(8, 30)),
+  preset("fantasyBackpack", 8, 6, "icons/containers/bags/pack-leather-tan.webp", dnd5eBag(5, 30)),
+  preset("fantasyBarrel", 8, 8, "icons/containers/barrels/barrel-oak-tan.webp", dnd5eBag(70, 334)),
+  preset("fantasyChest", 12, 8, "icons/containers/chest/chest-reinforced-steel-brown.webp", dnd5eBag(25, 300)),
+  preset("fantasyBagOfHolding", 12, 8, "icons/containers/bags/pack-engraved-leather-blue.webp", dnd5eBag(15, 500, ["mgc", "weightlessContents"]))
 ]);
 
 /**
@@ -102,6 +126,38 @@ export const PRESET_STRINGS = Object.freeze({
         SteamerTrunk: {
           Name: "Steamer Trunk",
           Description: "Heavy travel trunk for an expedition. Not something you carry while running."
+        },
+        FantasyPouch: {
+          Name: "Pouch",
+          Description: "A leather pouch on the belt. Coins, a few potions, small things."
+        },
+        FantasySack: {
+          Name: "Sack",
+          Description: "A plain cloth sack. Roomy, but nothing long fits."
+        },
+        FantasyBasket: {
+          Name: "Basket",
+          Description: "A woven basket with a handle. Good for food and light goods."
+        },
+        FantasySaddlebags: {
+          Name: "Saddlebags",
+          Description: "A pair of bags slung over a mount. Takes a long weapon."
+        },
+        FantasyBackpack: {
+          Name: "Backpack",
+          Description: "The adventurer's pack. Takes all but the longest weapons."
+        },
+        FantasyBarrel: {
+          Name: "Barrel",
+          Description: "A wooden barrel. Holds a lot, and is not easy to carry."
+        },
+        FantasyChest: {
+          Name: "Chest",
+          Description: "A heavy reinforced chest. Holds anything, pike and lance included."
+        },
+        FantasyBagOfHolding: {
+          Name: "Bag of Holding",
+          Description: "Bigger inside than out, and its contents weigh nothing."
         }
       }
     }
@@ -156,6 +212,38 @@ export const PRESET_STRINGS = Object.freeze({
         SteamerTrunk: {
           Name: "Baú de Viagem",
           Description: "Baú pesado para expedições. Não é algo para carregar correndo."
+        },
+        FantasyPouch: {
+          Name: "Algibeira",
+          Description: "Uma bolsa de couro presa ao cinto. Moedas, algumas poções, coisas pequenas."
+        },
+        FantasySack: {
+          Name: "Saco",
+          Description: "Um saco simples de pano. Espaçoso, mas nada comprido cabe nele."
+        },
+        FantasyBasket: {
+          Name: "Cesto",
+          Description: "Um cesto trançado com alça. Bom para comida e mercadorias leves."
+        },
+        FantasySaddlebags: {
+          Name: "Alforjes",
+          Description: "Um par de bolsas sobre a montaria. Leva uma arma comprida."
+        },
+        FantasyBackpack: {
+          Name: "Mochila",
+          Description: "A mochila do aventureiro. Leva tudo menos as armas mais compridas."
+        },
+        FantasyBarrel: {
+          Name: "Barril",
+          Description: "Um barril de madeira. Guarda muita coisa e não é fácil de carregar."
+        },
+        FantasyChest: {
+          Name: "Baú",
+          Description: "Um baú pesado e reforçado. Guarda de tudo, até pique e lança."
+        },
+        FantasyBagOfHolding: {
+          Name: "Bolsa de Contenção",
+          Description: "Maior por dentro do que por fora, e seu conteúdo não pesa nada."
         }
       }
     }

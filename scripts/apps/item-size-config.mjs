@@ -6,7 +6,7 @@
 import { MODULE_ID, MAX_DIM, FLAGS } from "../constants.mjs";
 import { bindArtFallback } from "../core/art.mjs";
 import { explainSize, sanitizeContainer, sanitizeSize } from "../core/sizes.mjs";
-import { describe, displayImg, moduleFlags } from "../foundry/system-adapter.mjs";
+import { describe, displayImg, displayName, moduleFlags } from "../foundry/system-adapter.mjs";
 import { registry, setItemConfig } from "../foundry/inventory.mjs";
 import { canEditSizes } from "../settings.mjs";
 import { loc, notify } from "../foundry/util.mjs";
@@ -14,9 +14,14 @@ import { loc, notify } from "../foundry/util.mjs";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 const SOURCE_KEYS = {
+  noSpace: "ATTACHE.Config.Source.NoSpace",
   id: "ATTACHE.Config.Source.Id",
+  identity: "ATTACHE.Config.Source.Id",
   name: "ATTACHE.Config.Source.Name",
+  baseName: "ATTACHE.Config.Source.BaseName",
   keyword: "ATTACHE.Config.Source.Keyword",
+  subtype: "ATTACHE.Config.Source.Subtype",
+  weight: "ATTACHE.Config.Source.Weight",
   type: "ATTACHE.Config.Source.Type",
   fallback: "ATTACHE.Config.Source.Fallback",
   nonPhysical: "ATTACHE.Config.Source.NonPhysical"
@@ -75,7 +80,7 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   get title() {
-    return loc("ATTACHE.Config.SizeTitle", { name: this.item.name });
+    return loc("ATTACHE.Config.SizeTitle", { name: displayName(this.item) });
   }
 
   /** Resolved size if this item had no size / exclusion override. */

@@ -39,6 +39,15 @@
       "type": "Item",
       "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" },
       "flags": {}
+    },
+    {
+      "name": "containers-dnd5e",
+      "label": "Attaché Case: Containers",
+      "system": "dnd5e",
+      "path": "packs/containers-dnd5e",
+      "type": "Item",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" },
+      "flags": {}
     }
   ],
   "packFolders": [
@@ -46,7 +55,7 @@
       "name": "Attaché Case",
       "sorting": "a",
       "color": "#3a3f4a",
-      "packs": ["containers-coc7", "containers-deltagreen"]
+      "packs": ["containers-coc7", "containers-deltagreen", "containers-dnd5e"]
     }
   ],
   "socket": false,

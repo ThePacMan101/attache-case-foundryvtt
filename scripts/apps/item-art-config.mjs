@@ -5,7 +5,7 @@
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
 import { bindArtFallback, resolveArt } from "../core/art.mjs";
-import { canEditArt, cleanArt, imageExtensions, moduleFlags } from "../foundry/system-adapter.mjs";
+import { displayName, canEditArt, cleanArt, imageExtensions, moduleFlags } from "../foundry/system-adapter.mjs";
 import { setItemArt } from "../foundry/inventory.mjs";
 import { loc, notify } from "../foundry/util.mjs";
 
@@ -60,7 +60,7 @@ export class ItemArtConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
   get title() {
-    return loc("ATTACHE.Config.ArtTitle", { name: this.item.name });
+    return loc("ATTACHE.Config.ArtTitle", { name: displayName(this.item) });
   }
 
   /** @override */

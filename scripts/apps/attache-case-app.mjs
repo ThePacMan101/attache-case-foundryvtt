@@ -7,7 +7,7 @@
 import { MODULE_ID, BODY_ID } from "../constants.mjs";
 import { bindArtFallback } from "../core/art.mjs";
 import * as service from "../foundry/inventory.mjs";
-import { canEditArt, displayImg, isSupportedActor, isArmor } from "../foundry/system-adapter.mjs";
+import { canEditArt, displayImg, displayName, itemQuantity, quantityLabel, isSupportedActor, isSupportedSystem, isArmor } from "../foundry/system-adapter.mjs";
 import { cellSize, showNames, wornEnabled, canEditSizes } from "../settings.mjs";
 import { loc, notify, typeLabel } from "../foundry/util.mjs";
 import { DragController, screenScale } from "./drag-controller.mjs";
@@ -116,7 +116,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return null;
     }
     if (!isSupportedActor(actor)) {
-      notify("warn", "ATTACHE.Notify.Unsupported");
+      notify("warn", isSupportedSystem() ? "ATTACHE.Notify.UnsupportedActor" : "ATTACHE.Notify.Unsupported");
       return null;
     }
     if (!actor.testUserPermission(game.user, "OBSERVER")) {
@@ -248,7 +248,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
         if (p.c !== ct.id) continue;
         const { item, size: s } = state.entries.get(id);
         tiles.push({
-          id, name: item.name, art: displayImg(item), x: p.x, y: p.y, w: p.w, h: p.h, uw: s.w, uh: s.h, r: p.r,
+          id, name: displayName(item), qty: this.#badge(item), art: displayImg(item), x: p.x, y: p.y, w: p.w, h: p.h, uw: s.w, uh: s.h, r: p.r,
           small: p.w === 1 || p.h === 1,
           tooltip: this.#tooltip(item, s)
         });
@@ -256,7 +256,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return {
         id: ct.id,
         isBody: ct.id === BODY_ID,
-        name: ct.item?.name ?? loc("ATTACHE.Window.Body"),
+        name: ct.item ? displayName(ct.item) : loc("ATTACHE.Window.Body"),
         art: ct.item ? displayImg(ct.item) : null,
         cols: ct.cols,
         rows: ct.rows,
@@ -272,7 +272,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const chip = (item, kind) => {
       const s = state.entries.get(item.id)?.size ?? service.itemSize(item).size;
       return {
-        id: item.id, name: item.name, art: displayImg(item), kind,
+        id: item.id, name: displayName(item), qty: this.#badge(item), art: displayImg(item), kind,
         size: s ? size(s) : "",
         tooltip: this.#tooltip(item, s),
         draggable: editable && Boolean(s)
@@ -293,11 +293,18 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     });
   }
 
-  /** Tooltip HTML: name, size and type. */
+  /** The text of a stack's badge; empty = no badge. */
+  #badge(item) {
+    const quantity = itemQuantity(item);
+    return quantity > 1 ? quantityLabel(quantity) : "";
+  }
+
+  /** Tooltip HTML: name, size, type and stack. */
   #tooltip(item, size) {
     const esc = foundry.utils.escapeHTML;
-    const meta = [size ? loc("ATTACHE.Window.Size", { w: size.w, h: size.h }) : null, typeLabel(item.type)].filter(Boolean);
-    return `<strong>${esc(item.name)}</strong><div class="attache-tip-meta">${esc(meta.join(" · "))}</div>`;
+    const quantity = itemQuantity(item);
+    const meta = [size ? loc("ATTACHE.Window.Size", { w: size.w, h: size.h }) : null, typeLabel(item.type), quantity > 1 ? `×${quantity}` : null].filter(Boolean);
+    return `<strong>${esc(displayName(item))}</strong><div class="attache-tip-meta">${esc(meta.join(" · "))}</div>`;
   }
 
   /** @override */
@@ -469,7 +476,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   notifyNoSpace(item) {
-    notify("warn", "ATTACHE.Notify.NoSpace", { name: item.name });
+    notify("warn", "ATTACHE.Notify.NoSpace", { name: displayName(item) });
   }
 
   /* -------------------------------------------- */
@@ -659,7 +666,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async #delete(item) {
     if (!item) return;
-    if (await confirmDialog("ATTACHE.Menu.Delete", "ATTACHE.Config.DeleteConfirm", { name: item.name })) {
+    if (await confirmDialog("ATTACHE.Menu.Delete", "ATTACHE.Config.DeleteConfirm", { name: displayName(item) })) {
       await service.deleteItem(item);
     }
   }
@@ -669,14 +676,14 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const ct = this.inventory?.containers.find((c) => c.id === containerId);
     const current = ct ?? (isBody ? service.bodyDims(this.actor) : null);
     if (!current) return;
-    const name = isBody ? loc("ATTACHE.Window.Body") : ct.item.name;
+    const name = isBody ? loc("ATTACHE.Window.Body") : displayName(ct.item);
     const dims = await promptResize(name, current, { min: isBody ? 0 : 1 });
     if (dims) await service.resizeContainer(this.actor, containerId, dims);
   }
 
   async #removeContainer(item) {
     if (!item) return;
-    if (await confirmDialog("ATTACHE.Menu.RemoveContainer", "ATTACHE.Config.RemoveConfirm", { name: item.name })) {
+    if (await confirmDialog("ATTACHE.Menu.RemoveContainer", "ATTACHE.Config.RemoveConfirm", { name: displayName(item) })) {
       await service.removeContainer(this.actor, item.id);
     }
   }

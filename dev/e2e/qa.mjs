@@ -223,6 +223,10 @@ export async function clearNotifications(page) {
 export async function clickMenu(page, text) {
   const entry = page.locator("#context-menu .context-item", { hasText: text }).first();
   await expect(entry).toBeVisible();
+  // Core opens the menu with a 200 ms height animation, clipped by overflow:hidden. Clicking during it makes
+  // Playwright scroll the clipped row into view, and the rows then slide back as the menu grows. A press and a
+  // release on different rows click their common ancestor, which core ignores: no action, menu still open.
+  await page.locator("#context-menu").evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished.catch(() => null))));
   await entry.click();
   // Core closes the menu with an animation and then removes its element; re-opening the same menu
   // before that finishes would lose the new one, so wait until it is gone.

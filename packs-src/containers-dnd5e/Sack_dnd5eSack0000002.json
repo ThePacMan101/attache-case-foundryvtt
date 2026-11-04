@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eSack0000002",
+  "_key": "!items!dnd5eSack0000002",
+  "name": "Sack",
+  "type": "container",
+  "img": "icons/containers/bags/sack-simple-leather-tan.webp",
+  "system": {
+    "description": {
+      "value": "<p>A plain cloth sack. Roomy, but nothing long fits.</p><p><em>Sack container: 6 × 4 cells.</em></p>"
+    },
+    "weight": {
+      "value": 0.5,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 30,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 200000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 6,
+        "rows": 4
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5eChest000007",
+  "_key": "!items!dnd5eChest000007",
+  "name": "Chest",
+  "type": "container",
+  "img": "icons/containers/chest/chest-reinforced-steel-brown.webp",
+  "system": {
+    "description": {
+      "value": "<p>A heavy reinforced chest. Holds anything, pike and lance included.</p><p><em>Chest container: 12 × 8 cells.</em></p>"
+    },
+    "weight": {
+      "value": 25,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 300,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 700000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 12,
+        "rows": 8
+      }
+    }
+  }
+}

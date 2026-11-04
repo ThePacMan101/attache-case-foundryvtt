@@ -1,0 +1,41 @@
+{
+  "_id": "dnd5eBagHolding8",
+  "_key": "!items!dnd5eBagHolding8",
+  "name": "Bag of Holding",
+  "type": "container",
+  "img": "icons/containers/bags/pack-engraved-leather-blue.webp",
+  "system": {
+    "description": {
+      "value": "<p>Bigger inside than out, and its contents weigh nothing.</p><p><em>Bag of Holding container: 12 × 8 cells.</em></p>"
+    },
+    "weight": {
+      "value": 15,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 500,
+        "units": "lb"
+      }
+    },
+    "properties": [
+      "mgc",
+      "weightlessContents"
+    ],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 800000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 12,
+        "rows": 8
+      }
+    }
+  }
+}

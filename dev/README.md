@@ -31,7 +31,7 @@ machine has them (below), starts Foundry, copies the v14 client source to `dev/c
 |---|---|---|---|---|---|
 | `WORLDS` | `attache-coc7` | CoC7 | `attache-case` | `Investigator Test` | `smoke`, `scenarios`, `visual`, zip check |
 | `WORLDS` | `attache-dg` | deltagreen | `attache-case` | `Agent Test` | `smoke`, `scenarios`, `visual`, zip check |
-| `DND5E_WORLDS` | `attache-dnd5e` | dnd5e 5.3.3 | `attache-case` | `Adventurer Test` | `dnd5e-load`, `art`, `body-defaults`, `spikes` |
+| `DND5E_WORLDS` | `attache-dnd5e` | dnd5e 5.3.3 | `attache-case` | `Adventurer Test` | `dnd5e-load`, `dnd5e`, `art`, `body-defaults`, `spikes` |
 | `DND5E_WORLDS` | `attache-dnd5e-plutonium` | dnd5e 5.3.3 | `attache-case`, `plutonium`, `lib-wrapper` | `Adventurer Test` | `dnd5e-load`, `spikes` |
 
 Re-running only fills in what is missing. It ends on the setup screen. The dnd5e worlds are seeded by item name
@@ -84,6 +84,7 @@ SAVE_DOCS=1 dev/e2e/run.sh visual.spec.mjs -g coc7      # also refresh docs/scre
 QA_SHOTS=1 dev/e2e/run.sh scenarios.spec.mjs -g ...     # screenshot every pointer drag mid-flight
 dev/e2e/run.sh art.spec.mjs                       # alternative images, CoC7 + Delta Green + clean dnd5e (~6 min)
 dev/e2e/run.sh body-defaults.spec.mjs             # default size per system and the GM reset, same worlds (~5 min)
+dev/e2e/run.sh dnd5e.spec.mjs                     # dnd5e basics and sizing on the clean world, GM + Player
 dev/e2e/run.sh                                    # everything (all the specs below and above)
 ```
 
@@ -120,6 +121,7 @@ dev/rebuild-packs.sh                      # stop Foundry, npm run build:packs, r
 ```
 
 `packs/` is tracked and a rebuild changes its bytes even when `packs-src/` did not change, so run this only when the sources did.
+When one pack changed, back up the others, restore them after the rebuild, then run `dev/setup.sh --packs-only` with Foundry stopped so that the writable copy matches.
 
 ## Ad-hoc screenshots
 

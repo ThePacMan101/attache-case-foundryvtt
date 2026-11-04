@@ -14,7 +14,8 @@
       "Empty": "Empty",
       "Pack": "Place unstowed items",
       "Excluded": "Not carried",
-      "NoContainers": "No containers"
+      "NoContainers": "No containers",
+      "Unidentified": "Unidentified Item"
     },
     "Menu": {
       "OpenCase": "Attaché Case",
@@ -54,7 +55,11 @@
         "Keyword": "name keyword",
         "Type": "item type",
         "Fallback": "fallback",
-        "NonPhysical": "not an inventory item"
+        "NonPhysical": "not an inventory item",
+        "NoSpace": "not an object",
+        "BaseName": "base item",
+        "Subtype": "item subtype",
+        "Weight": "item weight"
       },
       "Reset": "Reset to Default",
       "Exclude": "Takes no space",
@@ -129,7 +134,8 @@
       "SaveFailed": "Could not save the changes.",
       "InvalidArt": "That is not a valid image path.",
       "NoCustomBodies": "No actor has a custom size.",
-      "BodiesCleared": "Custom sizes cleared: {count}."
+      "BodiesCleared": "Custom sizes cleared: {count}.",
+      "UnsupportedActor": "This actor type is not supported."
     },
     "Preset": {
       "BeltPouch": {
@@ -179,6 +185,38 @@
       "SteamerTrunk": {
         "Name": "Steamer Trunk",
         "Description": "Heavy travel trunk for an expedition. Not something you carry while running."
+      },
+      "FantasyPouch": {
+        "Name": "Pouch",
+        "Description": "A leather pouch on the belt. Coins, a few potions, small things."
+      },
+      "FantasySack": {
+        "Name": "Sack",
+        "Description": "A plain cloth sack. Roomy, but nothing long fits."
+      },
+      "FantasyBasket": {
+        "Name": "Basket",
+        "Description": "A woven basket with a handle. Good for food and light goods."
+      },
+      "FantasySaddlebags": {
+        "Name": "Saddlebags",
+        "Description": "A pair of bags slung over a mount. Takes a long weapon."
+      },
+      "FantasyBackpack": {
+        "Name": "Backpack",
+        "Description": "The adventurer's pack. Takes all but the longest weapons."
+      },
+      "FantasyBarrel": {
+        "Name": "Barrel",
+        "Description": "A wooden barrel. Holds a lot, and is not easy to carry."
+      },
+      "FantasyChest": {
+        "Name": "Chest",
+        "Description": "A heavy reinforced chest. Holds anything, pike and lance included."
+      },
+      "FantasyBagOfHolding": {
+        "Name": "Bag of Holding",
+        "Description": "Bigger inside than out, and its contents weigh nothing."
       }
     }
   }

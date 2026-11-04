@@ -1,0 +1,38 @@
+{
+  "_id": "dnd5ePouch000001",
+  "_key": "!items!dnd5ePouch000001",
+  "name": "Pouch",
+  "type": "container",
+  "img": "icons/containers/bags/pouch-leather-green.webp",
+  "system": {
+    "description": {
+      "value": "<p>A leather pouch on the belt. Coins, a few potions, small things.</p><p><em>Pouch container: 3 × 2 cells.</em></p>"
+    },
+    "weight": {
+      "value": 1,
+      "units": "lb"
+    },
+    "capacity": {
+      "weight": {
+        "value": 6,
+        "units": "lb"
+      }
+    },
+    "properties": [],
+    "quantity": 1
+  },
+  "effects": [],
+  "folder": null,
+  "sort": 100000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "attache-case": {
+      "container": {
+        "cols": 3,
+        "rows": 2
+      }
+    }
+  }
+}
