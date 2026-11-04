@@ -2,14 +2,17 @@
  * Idempotent world provisioning for the dev server (called by dev/setup.sh inside the e2e container).
  * For every world in WORLDS: create it if missing, launch it, log in as Gamemaster, enable
  * `attache-case`, ensure a "Player" user and a Player-owned character that carries a few compendium
- * weapons and armor. Leaves the server on the setup screen.
+ * weapons and armor. The DND5E_WORLDS get the same, seeded by item name, plus their extra modules;
+ * the Plutonium world is skipped on a machine without the Plutonium copy. Leaves the server on the
+ * setup screen.
  */
 
 import fs from "node:fs";
 import { chromium } from "@playwright/test";
 import {
-  FOUNDRY_URL, WORLDS, SEED_FLAG, waitForServer, ensureSetupAccess, postAction, launchWorld,
-  loginAs, waitForGameReady, shutdownWorld, waitFor, collectConsoleErrors
+  FOUNDRY_URL, WORLDS, DND5E_WORLDS, FIVE_E_TOOLS, SEED_FLAG, waitForServer, ensureSetupAccess, postAction,
+  launchWorld, loginAs, waitForGameReady, waitForPlutonium, plutoniumInstalled, manifestSupports, shutdownWorld,
+  waitFor, collectConsoleErrors
 } from "./helpers.mjs";
 
 const WORLDS_DIR = "/work/dev/data/Data/worlds";
@@ -98,6 +101,103 @@ async function seed(page, actorType) {
   }, { actorType, flag: SEED_FLAG });
 }
 
+/**
+ * Runs in the browser as GM: enable modules in one write, so a dependency is never missing.
+ * Returns true when a reload is needed.
+ */
+async function enableModules(page, ids) {
+  return page.evaluate(async (ids) => {
+    const cfg = foundry.utils.deepClone(game.settings.get("core", "moduleConfiguration") ?? {});
+    const missing = ids.filter((id) => cfg[id] !== true);
+    if (!missing.length) return false;
+    for (const id of missing) cfg[id] = true;
+    await game.settings.set("core", "moduleConfiguration", cfg);
+    return true;
+  }, ids);
+}
+
+/**
+ * First-boot presets, so that Plutonium needs no network: no remote prerelease and homebrew indexes
+ * (their failure is a page error) and no backend probe. Saved through a 100 ms throttle, hence the
+ * wait. Returns true when a reload is needed.
+ */
+async function presetPlutonium(page) {
+  await waitForPlutonium(page);
+  const changed = await page.evaluate(() => {
+    const { config } = game.modules.get("plutonium").api;
+    const presets = [["dataSources", "isNoPrereleaseBrewIndexes", true], ["misc", "isSkipBackendCheck", true]];
+    const todo = presets.filter(([group, key, value]) => config.getValue(group, key) !== value);
+    for (const [group, key, value] of todo) config.setValue(group, key, value);
+    return todo.length > 0;
+  });
+  if (changed) await page.waitForTimeout(1000);
+  return changed;
+}
+
+/** Runs in the browser as GM: Player user + Player-owned character, seeded by item name. */
+async function seedDnd5e(page, meta) {
+  return page.evaluate(async ({ meta, flag }) => {
+    const report = {};
+    let player = game.users.getName("Player");
+    if (!player) {
+      player = await User.create({ name: "Player", role: CONST.USER_ROLES.PLAYER });
+      report.createdPlayer = true;
+    }
+    let actor = game.actors.find((a) => a.getFlag(flag.scope, flag.key));
+    if (!actor) {
+      actor = await Actor.create({
+        name: meta.actorName, type: meta.actorType,
+        ownership: { default: 0, [player.id]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER },
+        flags: { [flag.scope]: { [flag.key]: true } }
+      });
+      report.createdActor = actor.name;
+    }
+    if (player.character?.id !== actor.id) await player.update({ character: actor.id });
+
+    if (!actor.items.some((i) => i.type === "weapon")) {
+      const pack = game.packs.get(meta.pack);
+      if (!pack) throw new Error(`Seed pack ${meta.pack} not found`);
+      const index = await pack.getIndex();
+      const data = [];
+      for (const name of meta.items) {
+        const entry = index.find((e) => e.name === name);
+        if (!entry) throw new Error(`Seed item ${name} not found in ${meta.pack}`);
+        data.push(game.items.fromCompendium(await pack.getDocument(entry._id)));
+      }
+      const created = await actor.createEmbeddedDocuments("Item", data);
+      report.items = created.map((i) => `${i.type}: ${i.name}`);
+    }
+    report.actor = { id: actor.id, name: actor.name, items: actor.items.size };
+    report.users = game.users.map((u) => `${u.name} (role ${u.role})`);
+    return report;
+  }, { meta, flag: SEED_FLAG });
+}
+
+/** Provision one dnd5e world. No code path is shared with the CoC7/DG seeding above. */
+async function setupDnd5eWorld(page, worldId, meta) {
+  await launchWorld(page, worldId);
+  await loginAs(page, "Gamemaster");
+  const ids = ["attache-case", ...meta.modules];
+  if (await enableModules(page, ids)) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForGameReady(page);
+  }
+  const inactive = await page.evaluate((ids) => ids.filter((id) => game.modules.get(id)?.active !== true), ids);
+  // Stays enabled in the world, so it activates by itself once module.json declares dnd5e (M1).
+  const refused = !manifestSupports(meta.system) && inactive.includes("attache-case");
+  if (refused) console.log(`[setup] ${worldId}: attache-case not served: module.json does not declare ${meta.system}`);
+  const failed = inactive.filter((id) => !(refused && id === "attache-case"));
+  if (failed.length) throw new Error(`not active in ${worldId}: ${failed.join(", ")}`);
+  if (meta.modules.includes("plutonium") && await presetPlutonium(page)) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForGameReady(page);
+    await waitForPlutonium(page);
+  }
+  const report = await seedDnd5e(page, meta);
+  console.log(`[setup] ${worldId}: system=${await page.evaluate(() => `${game.system.id} ${game.system.version}`)}`
+    + ` active=${ids.filter((id) => !inactive.includes(id)).join("+")}; ${JSON.stringify(report)}`);
+}
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 const errors = collectConsoleErrors(page);
@@ -106,7 +206,13 @@ try {
   await waitForServer();
   console.log(`[setup] Foundry answering at ${FOUNDRY_URL}`);
   await shutdownWorld(page);
-  for (const [worldId, meta] of Object.entries(WORLDS)) await ensureWorld(page, worldId, meta);
+  const dnd5e = Object.entries(DND5E_WORLDS).filter(([worldId, meta]) => {
+    if (!meta.modules.includes("plutonium") || plutoniumInstalled()) return true;
+    console.log(`[setup] skipping ${worldId}: no Plutonium copy on this machine`);
+    return false;
+  });
+  // World creation needs the setup screen, so every world is created before any is launched.
+  for (const [worldId, meta] of [...Object.entries(WORLDS), ...dnd5e]) await ensureWorld(page, worldId, meta);
   for (const [worldId, meta] of Object.entries(WORLDS)) {
     await launchWorld(page, worldId);
     await loginAs(page, "Gamemaster");
@@ -120,6 +226,8 @@ try {
     console.log(`[setup] ${worldId}: system=${await page.evaluate(() => `${game.system.id} ${game.system.version}`)}`
       + ` module active; ${JSON.stringify(report)}`);
   }
+  await page.route(FIVE_E_TOOLS, (route) => route.abort());
+  for (const [worldId, meta] of dnd5e) await setupDnd5eWorld(page, worldId, meta);
   await shutdownWorld(page);
   console.log("[setup] done; server is back on the setup screen");
 } catch (err) {

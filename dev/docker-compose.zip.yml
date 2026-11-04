@@ -1,0 +1,11 @@
+# Overlay for dev/zip-check.sh: Foundry with only what is in the release zip, on clean data.
+services:
+  foundry:
+    volumes: !override
+      - ./data-zip:/data
+      - ./cache:/cache
+  e2e:
+    volumes: !override
+      - ..:/work
+      - ./data-zip:/work/dev/data
+      - e2e_node_modules:/work/dev/e2e/node_modules

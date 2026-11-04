@@ -22,6 +22,53 @@ export const WORLDS = {
   "attache-dg": { system: "deltagreen", title: "Attaché Case — Delta Green", actorType: "agent" }
 };
 
+/**
+ * dnd5e test worlds, also created by dev/setup.sh. Kept out of WORLDS because the module has no dnd5e
+ * support yet, so smoke, scenarios and visual cannot run there. `modules` are enabled next to ours.
+ * `items` are seeded by name from the system's `pack`.
+ */
+const DND5E_SEED = {
+  actorName: "Adventurer Test",
+  pack: "dnd5e.equipment24",
+  items: ["Longsword", "Dagger", "Chain Mail", "Shield", "Backpack", "Potion of Healing", "Rope"]
+};
+export const DND5E_WORLDS = {
+  "attache-dnd5e": {
+    system: "dnd5e", title: "Attaché Case — D&D 5e", actorType: "character", modules: [], ...DND5E_SEED
+  },
+  "attache-dnd5e-plutonium": {
+    system: "dnd5e", title: "Attaché Case — D&D 5e + Plutonium", actorType: "character",
+    modules: ["plutonium", "lib-wrapper"], ...DND5E_SEED
+  }
+};
+
+/** Whether this machine has the local Plutonium copy (dev/install-plutonium.sh); it never does in CI. */
+export function plutoniumInstalled() {
+  return fs.existsSync(path.resolve(HERE, "..", "data", "Data", "modules", "plutonium", "module.json"));
+}
+
+/**
+ * Whether module.json declares a system. The server does not even send the client a module whose
+ * `relationships.systems` omits the world's system, whatever `core.moduleConfiguration` says.
+ * @param {string} systemId
+ */
+export function manifestSupports(systemId) {
+  const manifest = JSON.parse(fs.readFileSync(path.resolve(HERE, "..", "..", "module.json"), "utf8"));
+  return (manifest.relationships?.systems ?? []).some((s) => s.id === systemId);
+}
+
+/** Plutonium's remote host, blocked in every test so that imports are proven to work offline. */
+export const FIVE_E_TOOLS = "**/*5e.tools/**";
+
+/**
+ * Wait until Plutonium finished its `ready` work. Its API is the last thing set, after awaits, so
+ * neither `game.ready` nor `globalThis.plutonium` is enough.
+ * @param {import("@playwright/test").Page} page
+ */
+export async function waitForPlutonium(page) {
+  await page.waitForFunction(() => game.modules.get("plutonium")?.api, null, { timeout: 120_000 });
+}
+
 /** Flag scope/key that marks the seeded test character. */
 export const SEED_FLAG = { scope: "world", key: "attacheSeed" };
 
@@ -165,7 +212,8 @@ export async function shutdownWorld(page) {
  * @param {string} worldId
  */
 export async function launchWorld(page, worldId) {
-  const status = await serverStatus();
+  // `docker compose up -d` returns before the server listens, so a cold stack needs this wait.
+  const status = await waitForServer();
   if (status?.active && status.world === worldId) {
     await page.goto(`${FOUNDRY_URL}/join`, { waitUntil: "domcontentloaded" });
     return;

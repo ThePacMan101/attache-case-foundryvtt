@@ -6,6 +6,7 @@ AGENTS.md
 # Secrets and local dev state
 .env
 dev/data/
+dev/data-zip/
 dev/cache/
 dev/artifacts/
 

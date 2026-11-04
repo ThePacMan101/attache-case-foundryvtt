@@ -2,13 +2,18 @@
 # One-command, idempotent Foundry VTT v14 dev environment (everything runs in Docker):
 #   1. checks .env has usable credentials (never prints them)
 #   2. prepares dev/data + dev/cache (owned by the container user, uid 1000)
-#   3. installs/updates the CoC7 and Delta Green systems (dev/install-systems.sh)
+#   3. installs/updates CoC7, Delta Green and dnd5e 5.3.3 (dev/install-systems.sh), and copies the
+#      owner's Plutonium + libWrapper when available (dev/install-plutonium.sh)
 #   4. starts the foundry service and waits for it
 #   5. copies the Foundry client/common source to dev/cache/foundry-src (for API research)
-#   6. creates/updates the worlds attache-coc7 + attache-dg (dev/e2e/setup-worlds.mjs)
+#   6. creates/updates the worlds attache-coc7, attache-dg, attache-dnd5e (dev/e2e/setup-worlds.mjs)
 # Usage: dev/setup.sh
+#        dev/setup.sh --packs-only   (steps 1-2: refresh the writable pack copy, see dev/rebuild-packs.sh)
 set -o errexit -o nounset -o pipefail
 cd "$(dirname "$0")/.."
+
+PACKS_ONLY=false
+[ "${1:-}" = "--packs-only" ] && PACKS_ONLY=true
 
 COMPOSE=(docker compose -f dev/docker-compose.yml)
 IMAGE=felddy/foundryvtt:14.369
@@ -58,10 +63,23 @@ if [ "$(cat dev/data/module-packs/.stamp 2>/dev/null)" != "$stamp" ]; then
     rm -rf /data/module-packs && mkdir -p /data/module-packs && cp -a /packs/. /data/module-packs/ &&
     echo $stamp > /data/module-packs/.stamp && chown -R 1000:1000 /data/module-packs"
 fi
+$PACKS_ONLY && exit 0
 
-# --- 3. systems -----------------------------------------------------------------------------------
+# --- 3. systems and third-party modules -----------------------------------------------------------
+# Foundry only discovers packages when it starts, so a running server is restarted if any changed.
+package_versions() {
+  # An unmatched glob (nothing copied yet) must not fail the pipeline.
+  { cat dev/data/Data/systems/*/system.json dev/data/Data/modules/*/.attache-copied-version 2>/dev/null || true; } | sha256sum
+}
+packages_before=$(package_versions)
 log "installing game systems"
 "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint bash foundry /work/dev/install-systems.sh
+log "copying Plutonium and libWrapper, if this machine has them"
+dev/install-plutonium.sh
+if [ "$packages_before" != "$(package_versions)" ] && [ -n "$("${COMPOSE[@]}" ps -q --status running foundry)" ]; then
+  log "packages changed: restarting foundry"
+  "${COMPOSE[@]}" stop foundry >/dev/null
+fi
 
 # --- 4. foundry -----------------------------------------------------------------------------------
 log "starting foundry (first run downloads Foundry $VERSION into dev/cache/foundry)"
