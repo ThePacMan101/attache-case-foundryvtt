@@ -24,7 +24,7 @@
       {{#each panels}}
       <article class="attache-panel{{#if isBody}} is-body{{/if}}{{#if narrow}} is-narrow{{/if}}" style="--cols: {{cols}}; --rows: {{rows}}">
         <header class="attache-panel-header" data-container-id="{{id}}">
-          {{#if img}}<img class="attache-panel-icon" src="{{img}}" alt="" draggable="false">
+          {{#if art}}<img class="attache-panel-icon" src="{{art.src}}" data-fallback="{{art.fallback}}" alt="" draggable="false">
           {{else}}<i class="attache-panel-icon fa-solid fa-person" aria-hidden="true"></i>{{/if}}
           <span class="attache-panel-name">{{name}}</span>
           <span class="attache-panel-dims">{{dims}}</span>
@@ -40,7 +40,7 @@
           <div class="attache-item attache-tile{{#if r}} is-rotated{{/if}}{{#if small}} is-small{{/if}}" data-item-id="{{id}}" data-kind="tile"
                tabindex="0" aria-label="{{name}}" data-tooltip-html="{{tooltip}}" data-tooltip-direction="UP"
                style="--x: {{x}}; --y: {{y}}; --w: {{w}}; --h: {{h}}; --uw: {{uw}}; --uh: {{uh}}">
-            <img class="attache-tile-art" src="{{img}}" alt="" draggable="false">
+            <img class="attache-tile-art" src="{{art.src}}" data-fallback="{{art.fallback}}" alt="" draggable="false">
             {{#if @root.showNames}}<span class="attache-tile-name">{{name}}</span>{{/if}}
           </div>
           {{/each}}

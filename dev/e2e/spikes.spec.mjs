@@ -148,7 +148,8 @@ test("S1 system id, setting default and init order", async ({ browser }) => {
   expect(fresh.s1.atInit, "game.system.id is readable at our init").toBe("dnd5e");
   // An ordinary module loads and inits after the system. A `library: true` module such as lib-wrapper
   // comes BEFORE it, so "modules init after the system" is not a general rule. module.json has no `library`.
-  expect(fresh.moduleScripts.slice(2)).toEqual(["modules/lib-wrapper/lib-wrapper.js", "systems/dnd5e/dnd5e.mjs", "modules/plutonium/js/Bundle.js"]);
+  // Since M1 declares dnd5e in module.json, ours is served too, also after the system.
+  expect(fresh.moduleScripts.slice(2)).toEqual(["modules/lib-wrapper/lib-wrapper.js", "systems/dnd5e/dnd5e.mjs", "modules/attache-case/scripts/main.mjs", "modules/plutonium/js/Bundle.js"]);
   expect(fresh.order).toEqual(["evaluate:lib-wrapper", "evaluate:dnd5e", "evaluate:plutonium", "init:lib-wrapper", "init:dnd5e", "init:plutonium"]);
   expect(fresh.s1.configDnd5eAtInit, "CONFIG.DND5E is set by the time an ordinary module inits").toBe(true);
   expect(fresh.s1.gameDnd5eAtInit, "game.dnd5e is set by the time an ordinary module inits").toBe(true);

@@ -4,10 +4,10 @@
  */
 
 import { MODULE_ID } from "./constants.mjs";
-import { CONTAINER_PRESETS } from "./data/container-presets.mjs";
 import { registerSettings } from "./settings.mjs";
 import { registerHooks, registerKeybindings, warnIfUnsupported } from "./foundry/hooks.mjs";
 import { registerQueries } from "./foundry/queries.mjs";
+import { containerPresets } from "./foundry/system-adapter.mjs";
 import { getLayout, registerSizes, onRegistryChange } from "./foundry/inventory.mjs";
 import { AttacheCaseApp } from "./apps/attache-case-app.mjs";
 
@@ -23,13 +23,13 @@ Hooks.once("init", () => {
    * - `open(actor)` opens (or focuses) the actor's Attaché Case window.
    * - `getLayout(actor)` returns a plain-data snapshot of containers, placements and overflow.
    * - `registerSizes(registry)` adds a size registry (shape documented in scripts/core/sizes.mjs).
-   * - `presets` lists the ready-made containers.
+   * - `presets` lists the ready-made containers of the active system.
    */
   game.modules.get(MODULE_ID).api = Object.freeze({
     open: (actor) => AttacheCaseApp.open(actor),
     getLayout,
     registerSizes,
-    presets: CONTAINER_PRESETS
+    presets: containerPresets()
   });
 });
 

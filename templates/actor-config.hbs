@@ -27,7 +27,7 @@
     <ul class="attache-config-containers">
       {{#each containers}}
       <li class="attache-config-container" data-container-id="{{id}}">
-        <img src="{{img}}" alt="" draggable="false">
+        <img src="{{art.src}}" data-fallback="{{art.fallback}}" alt="" draggable="false">
         <a class="attache-config-name" data-action="openContainer">{{name}}</a>
         <input type="number" name="containers.{{id}}.cols" value="{{cols}}" min="1" max="{{@root.max}}" step="1"
                aria-label="{{localize 'ATTACHE.Config.Columns'}}" data-tooltip="ATTACHE.Config.Columns">

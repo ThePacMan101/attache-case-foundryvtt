@@ -9,9 +9,10 @@
  *   on windows in another document are simply not detected.
  */
 
+import { bindArtFallback } from "../core/art.mjs";
 import { footprint } from "../core/grid.mjs";
 import { canMove } from "../core/layout.mjs";
-import { isArmor } from "../foundry/system-adapter.mjs";
+import { displayImg, isArmor } from "../foundry/system-adapter.mjs";
 import { canGiveTo } from "../foundry/inventory.mjs";
 import { wornEnabled } from "../settings.mjs";
 
@@ -210,8 +211,11 @@ export class DragController {
     const d = this._drag;
     const ghost = d.doc.createElement("div");
     ghost.className = "attache-ghost";
+    bindArtFallback(ghost);
     const img = d.doc.createElement("img");
-    img.src = d.item.img;
+    const { src, fallback } = displayImg(d.item);
+    img.dataset.fallback = fallback;
+    img.src = src;
     img.alt = "";
     img.draggable = false;
     ghost.append(img);

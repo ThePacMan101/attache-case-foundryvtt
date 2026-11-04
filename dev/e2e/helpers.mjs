@@ -23,9 +23,9 @@ export const WORLDS = {
 };
 
 /**
- * dnd5e test worlds, also created by dev/setup.sh. Kept out of WORLDS because the module has no dnd5e
- * support yet, so smoke, scenarios and visual cannot run there. `modules` are enabled next to ours.
- * `items` are seeded by name from the system's `pack`.
+ * dnd5e test worlds, also created by dev/setup.sh. Kept out of WORLDS, which smoke, scenarios and visual
+ * use, so those stay on CoC7 and Delta Green. `modules` are enabled next to ours. `items` are seeded by
+ * name from the system's `pack`.
  */
 const DND5E_SEED = {
   actorName: "Adventurer Test",

@@ -6,11 +6,11 @@
 
 import { MODULE_ID, BODY_ID, FLAGS } from "../constants.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
-import { CONTAINER_PRESETS } from "../data/container-presets.mjs";
 import { buildLayout, findSpot, canMove, withPlacement, autoArrange as arrange } from "../core/layout.mjs";
 import { explainSize, isContainer, sanitizeContainer, sanitizeSize, mergeRegistries } from "../core/sizes.mjs";
+import { sanitizeArt } from "../core/art.mjs";
 import { footprint } from "../core/grid.mjs";
-import { describe, isArmor, isSupportedActor, moduleFlags, containerItemData } from "./system-adapter.mjs";
+import { describe, isArmor, isSupportedActor, moduleFlags, containerItemData, containerPresets, canEditArt } from "./system-adapter.mjs";
 import { defaultBody, wornEnabled } from "../settings.mjs";
 import { loc, notify, deletion, flagPath } from "./util.mjs";
 
@@ -576,6 +576,45 @@ export async function setBody(actor, dims) {
 }
 
 /**
+ * Actors that do not use the world default body grid. A token's delta holds only what the token
+ * overrides, so an unlinked token that merely inherits its base actor's size is not listed: clearing
+ * the base clears it.
+ * @returns {{base: Actor[], tokens: Actor[]}} world actors, and synthetic actors of unlinked tokens
+ */
+export function actorsWithCustomBody() {
+  const hasOwn = (doc) => doc?.flags?.[MODULE_ID]?.[FLAGS.BODY] !== undefined;
+  const base = game.actors.filter(hasOwn);
+  const tokens = [];
+  for (const scene of game.scenes) {
+    for (const token of scene.tokens) {
+      if (!token.actorLink && hasOwn(token.delta) && token.actor) tokens.push(token.actor);
+    }
+  }
+  return { base, tokens };
+}
+
+/**
+ * Put every actor back on the world default. Base actors go first, so that by the time a token is
+ * reset its base no longer has a size for it to fall back on.
+ * @returns {Promise<{cleared:number, failed:number}>}
+ */
+export async function clearBodyOverrides() {
+  const { base, tokens } = actorsWithCustomBody();
+  let cleared = 0;
+  let failed = 0;
+  for (const actor of [...base, ...tokens]) {
+    try {
+      await setBody(actor, null);
+      cleared++;
+    } catch (err) {
+      failed++;
+      console.error(`${MODULE_ID} | could not clear the size of ${actor.name}`, err);
+    }
+  }
+  return { cleared, failed };
+}
+
+/**
  * Resize a container ("body" or a container item). Items that no longer fit become unstowed
  * (their pos flag is kept, per the architecture contract).
  * @param {Actor} actor
@@ -607,7 +646,7 @@ function nextContainerSort(actor) {
  * @returns {Promise<Item|null>}
  */
 export async function addPresetContainer(actor, key) {
-  const preset = CONTAINER_PRESETS.find((p) => p.key === key);
+  const preset = containerPresets().find((p) => p.key === key);
   if (!preset) return null;
   const data = containerItemData({
     name: loc(preset.name), description: loc(preset.description), img: preset.img, cols: preset.cols, rows: preset.rows
@@ -628,6 +667,31 @@ export async function removeContainer(actor, containerId) {
   for (const item of actor.items) if (moduleFlags(item)[FLAGS.POS]?.c === containerId) contents.push(item.id);
   await actor.deleteEmbeddedDocuments("Item", [containerId]);
   if (contents.length) await packUnstowed(actor, { only: contents, clearRest: true });
+}
+
+/**
+ * Choose or reset an item's image. The item's own `img` is never touched.
+ * @param {Item} item
+ * @param {string|null} path path or URL; null or blank = back to the item's own image
+ * @returns {Promise<boolean>} false (and a warning) when refused
+ */
+export async function setItemArt(item, path) {
+  if (!canEditArt(item)) {
+    notify("warn", "ATTACHE.Notify.NoPermission");
+    return false;
+  }
+  const current = moduleFlags(item)[FLAGS.ART];
+  if (path === null || (typeof path === "string" && !path.trim())) {
+    if (current !== undefined) await item.update({ [flagPath(FLAGS.ART)]: deletion() });
+    return true;
+  }
+  const clean = sanitizeArt(path);
+  if (!clean) {
+    notify("warn", "ATTACHE.Notify.InvalidArt");
+    return false;
+  }
+  if (clean !== current) await item.update({ [flagPath(FLAGS.ART)]: clean });
+  return true;
 }
 
 /**

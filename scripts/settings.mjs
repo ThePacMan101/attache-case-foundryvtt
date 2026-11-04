@@ -2,7 +2,12 @@
  * Settings registration and typed getters.
  */
 
-import { MODULE_ID, SETTINGS, DEFAULT_BODY, DEFAULT_CELL_SIZE, CELL_SIZE_RANGE, MAX_DIM } from "./constants.mjs";
+import { MODULE_ID, SETTINGS, DEFAULT_CELL_SIZE, CELL_SIZE_RANGE, MAX_DIM } from "./constants.mjs";
+import { defaultBodyFor } from "./core/body-defaults.mjs";
+import { ResetBodies } from "./apps/reset-bodies.mjs";
+
+/** Key of the settings menu that clears per-actor sizes. */
+const RESET_BODIES_MENU = "resetBodies";
 
 /**
  * Register every setting. Call during `init`.
@@ -18,11 +23,21 @@ export function registerSettings(refresh) {
     name: `${key(name)}.Name`, hint: `${key(name)}.Hint`, scope, config: true
   });
 
+  // Core stores only what the GM saved, so a saved value wins over this per-system default.
+  const body = defaultBodyFor(game.system.id);
   game.settings.register(MODULE_ID, SETTINGS.DEFAULT_BODY_COLS, {
-    ...common("DefaultBodyCols", "world"), type: dim(DEFAULT_BODY.cols), default: DEFAULT_BODY.cols, onChange: refresh
+    ...common("DefaultBodyCols", "world"), type: dim(body.cols), default: body.cols, onChange: refresh
   });
   game.settings.register(MODULE_ID, SETTINGS.DEFAULT_BODY_ROWS, {
-    ...common("DefaultBodyRows", "world"), type: dim(DEFAULT_BODY.rows), default: DEFAULT_BODY.rows, onChange: refresh
+    ...common("DefaultBodyRows", "world"), type: dim(body.rows), default: body.rows, onChange: refresh
+  });
+  game.settings.registerMenu(MODULE_ID, RESET_BODIES_MENU, {
+    name: `${key("ResetBodies")}.Name`,
+    label: `${key("ResetBodies")}.Label`,
+    hint: `${key("ResetBodies")}.Hint`,
+    icon: "fa-solid fa-arrow-rotate-left",
+    type: ResetBodies,
+    restricted: true
   });
   game.settings.register(MODULE_ID, SETTINGS.AUTO_PLACE, {
     ...common("AutoPlace", "world"), type: new BooleanField({ initial: true }), default: true
@@ -48,8 +63,9 @@ const get = (k) => game.settings.get(MODULE_ID, k);
 
 /** @returns {{cols:number, rows:number}} world default body grid */
 export function defaultBody() {
+  const fallback = defaultBodyFor(game.system.id);
   const n = (v, d) => (Number.isInteger(v) && v >= 0 ? Math.min(v, MAX_DIM) : d);
-  return { cols: n(get(SETTINGS.DEFAULT_BODY_COLS), DEFAULT_BODY.cols), rows: n(get(SETTINGS.DEFAULT_BODY_ROWS), DEFAULT_BODY.rows) };
+  return { cols: n(get(SETTINGS.DEFAULT_BODY_COLS), fallback.cols), rows: n(get(SETTINGS.DEFAULT_BODY_ROWS), fallback.rows) };
 }
 
 /** @returns {number} cell size in px, clamped to the allowed range */

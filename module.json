@@ -17,7 +17,8 @@
   "relationships": {
     "systems": [
       { "id": "CoC7", "type": "system", "compatibility": { "verified": "8.16" } },
-      { "id": "deltagreen", "type": "system", "compatibility": {} }
+      { "id": "deltagreen", "type": "system", "compatibility": {} },
+      { "id": "dnd5e", "type": "system", "compatibility": { "verified": "5.3.3" } }
     ]
   },
   "packs": [

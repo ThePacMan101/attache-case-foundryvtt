@@ -5,6 +5,9 @@
  */
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
+import { resolveArt } from "../core/art.mjs";
+import { defaultBodyFor } from "../core/body-defaults.mjs";
+import { CONTAINER_PRESETS } from "../data/container-presets.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
 
 /**
@@ -15,7 +18,16 @@ import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
  * @property {(description: string) => object} describe builds the `system` data of a new
  *   container item (the two systems store descriptions differently)
  * @property {(item: Item) => string|null} coreId stable system-specific identity
+ * @property {{cols:number, rows:number}} defaultBody body grid when the GM saved no other value
+ * @property {ReadonlyArray<object>} presets containers offered in the Configure dialog
+ * @property {string[]} [actorTypes] supported actor types; unset = all
+ * @property {string[]} [visibleSystemKeys] `system.*` keys whose change re-renders the case
+ * @property {(item: Item, user: User) => boolean} [concealsArt] whether this user must not see the
+ *   item's chosen image; unset = never
  */
+
+/** Temporary dnd5e list, chosen from the modern presets until the fantasy list arrives. */
+const DND5E_PRESET_KEYS = new Set(["beltPouch", "satchel", "backpack", "duffelBag"]);
 
 /** @type {Readonly<Record<string, SystemProfile>>} */
 const PROFILES = Object.freeze({
@@ -24,14 +36,32 @@ const PROFILES = Object.freeze({
     armorTypes: ["armor"],
     containerType: "item",
     describe: (description) => ({ description: { value: description } }),
-    coreId: (item) => item.flags?.CoC7?.cocidFlag?.id || null
+    coreId: (item) => item.flags?.CoC7?.cocidFlag?.id || null,
+    defaultBody: defaultBodyFor("CoC7"),
+    presets: CONTAINER_PRESETS
   }),
   deltagreen: Object.freeze({
     physicalTypes: DEFAULT_REGISTRY.physicalTypes.deltagreen,
     armorTypes: ["armor"],
     containerType: "gear",
     describe: (description) => ({ description }),
-    coreId: () => null
+    coreId: () => null,
+    defaultBody: defaultBodyFor("deltagreen"),
+    presets: CONTAINER_PRESETS
+  }),
+  dnd5e: Object.freeze({
+    physicalTypes: DEFAULT_REGISTRY.physicalTypes.dnd5e,
+    armorTypes: [],
+    containerType: "container",
+    describe: (description) => ({ description: { value: description } }),
+    coreId: () => null,
+    defaultBody: defaultBodyFor("dnd5e"),
+    presets: CONTAINER_PRESETS.filter((p) => DND5E_PRESET_KEYS.has(p.key)),
+    actorTypes: ["character", "npc", "vehicle"],
+    visibleSystemKeys: ["identified"],
+    // A chosen image could name an item the player has not identified. dnd5e shows `item.img` to
+    // everyone, so that one is not a new leak.
+    concealsArt: (item, user) => !user?.isGM && item?.system?.identified === false
   })
 });
 
@@ -64,7 +94,14 @@ export function supportedSystems() {
  * @returns {boolean}
  */
 export function isSupportedActor(actor) {
-  return Boolean(actor && actor.documentName === "Actor" && isSupportedSystem());
+  if (!actor || actor.documentName !== "Actor" || !isSupportedSystem()) return false;
+  const types = profile().actorTypes;
+  return !types || types.includes(actor.type);
+}
+
+/** @returns {ReadonlyArray<object>} the container presets of the active system */
+export function containerPresets() {
+  return profile()?.presets ?? CONTAINER_PRESETS;
 }
 
 /**
@@ -84,6 +121,29 @@ export function isArmor(item) {
 export function moduleFlags(item) {
   const flags = item?.flags?.[MODULE_ID];
   return flags && typeof flags === "object" ? flags : {};
+}
+
+/**
+ * The image a user sees for an item, with what to try if that file does not load.
+ * @param {Item|object} item
+ * @param {User} [user]
+ * @returns {{src:string, fallback:string}}
+ */
+export function displayImg(item, user = game.user) {
+  const conceal = Boolean(profile()?.concealsArt?.(item, user));
+  return resolveArt({ art: moduleFlags(item)[FLAGS.ART], img: item?.img }, { conceal });
+}
+
+/**
+ * Whether a user may choose an item's image: whoever owns the item, unless its current image is
+ * concealed from them (the dialog would show the path, and saving would overwrite it).
+ * @param {Item} item
+ * @param {User} [user]
+ * @returns {boolean}
+ */
+export function canEditArt(item, user = game.user) {
+  if (!item?.isOwner || item.compendium?.locked) return false;
+  return !profile()?.concealsArt?.(item, user);
 }
 
 /**

@@ -20,6 +20,8 @@ export const FLAGS = Object.freeze({
   CONTAINER: "container",
   /** Item: `boolean` — armor worn on the body (takes no grid space). */
   WORN: "worn",
+  /** Item: `string` — image path or URL shown instead of the item's own image. */
+  ART: "art",
   /** Actor: `{cols, rows}` body grid override (0x0 = no body grid). */
   BODY: "body"
 });

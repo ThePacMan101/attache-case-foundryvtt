@@ -30,6 +30,8 @@ function applyUpdate(target, update) {
 
 let idCounter = 0;
 const newId = () => `id${String(++idCounter).padStart(14, "0")}`;
+/** Global write order across actors, so a test can check who was updated first. */
+let writeCounter = 0;
 
 class Collection extends Map {
   filter(fn) {
@@ -60,6 +62,7 @@ export class FakeItem extends DataModel {
   get sort() { return this._source.sort ?? 0; }
   get flags() { return this._source.flags; }
   get _stats() { return this._source._stats ?? {}; }
+  get system() { return this._source.system; }
   get uuid() { return this.parent ? `${this.parent.uuid}.Item.${this.id}` : `Item.${this.id}`; }
   get isOwner() { return this.parent ? this.parent.isOwner : true; }
   get actor() { return this.parent; }
@@ -74,9 +77,10 @@ export class FakeItem extends DataModel {
 }
 
 export class FakeActor {
-  constructor({ name = "Actor", owner = true, playerOwner = false, items = [], flags = {} } = {}) {
+  constructor({ name = "Actor", type, owner = true, playerOwner = false, items = [], flags = {} } = {}) {
     this._id = newId();
     this.name = name;
+    this.type = type;
     this.documentName = "Actor";
     this.pack = null;
     this.flags = clone(flags);
@@ -100,7 +104,7 @@ export class FakeActor {
   }
   getFlag(scope, key) { return this.flags?.[scope]?.[key]; }
   async update(update) {
-    this.log.push({ op: "updateActor", update });
+    this.log.push({ op: "updateActor", update, seq: ++writeCounter });
     const data = { flags: this.flags };
     applyUpdate(data, update);
     this.flags = data.flags;
@@ -144,6 +148,26 @@ export class FakeActor {
 }
 
 /**
+ * The synthetic actor of an unlinked token: reads fall through to the base actor, writes go to the
+ * token's delta, which only holds what the token overrides.
+ */
+class FakeTokenActor extends FakeActor {
+  constructor(base, delta) {
+    super({ name: `${base.name} (token)` });
+    this.base = base;
+    this.delta = delta;
+  }
+  getFlag(scope, key) {
+    return this.delta.flags?.[scope]?.[key] ?? this.base.getFlag(scope, key);
+  }
+  async update(update) {
+    this.log.push({ op: "updateActor", update, seq: ++writeCounter });
+    applyUpdate(this.delta, update);
+    return this;
+  }
+}
+
+/**
  * Install the fake globals. Returns handles to inspect notifications, hooks, settings.
  * @param {object} [options]
  */
@@ -173,9 +197,28 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
     }
   } };
   const actors = new Collection();
+  const scenes = new Collection();
+  const registered = new Map();
+  const menus = new Map();
+  const confirms = [];
+  const dialog = { answer: true };
+
+  class Field {
+    constructor(options = {}) {
+      this.options = options;
+      this.initial = options.initial;
+    }
+  }
+
+  class DialogV2 {
+    static async confirm(config) {
+      confirms.push(config);
+      return dialog.answer;
+    }
+  }
 
   globalThis.foundry = {
-    data: { operators: { ForcedDeletion } },
+    data: { operators: { ForcedDeletion }, fields: { NumberField: class extends Field {}, BooleanField: class extends Field {} } },
     abstract: { DataModel },
     utils: {
       deepClone: clone,
@@ -191,7 +234,7 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
       api: {
         ApplicationV2: class {},
         HandlebarsApplicationMixin: (Base) => class extends Base {},
-        DialogV2: class {}
+        DialogV2
       },
       ux: { ContextMenu: { implementation: class {} }, TextEditor: { implementation: { getDragEventData: () => ({}) } } },
       sidebar: { apps: { Compendium: class {} } },
@@ -202,9 +245,15 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
     system: { id: system },
     user,
     users: { activeGM: gm, get: (id) => (id === user.id ? user : id === gm.id ? gm : undefined) },
-    settings: { get: (ns, key) => settings.get(`${ns}.${key}`), register: () => {} },
+    settings: {
+      // As in core: a value nobody saved reads as the registered default.
+      get: (ns, key) => (settings.has(`${ns}.${key}`) ? settings.get(`${ns}.${key}`) : registered.get(`${ns}.${key}`)?.default),
+      register: (ns, key, config) => registered.set(`${ns}.${key}`, config),
+      registerMenu: (ns, key, config) => menus.set(`${ns}.${key}`, config)
+    },
     i18n: { lang: "en", localize: (key, data) => (data ? `${key}${JSON.stringify(data)}` : key) },
     actors,
+    scenes,
     items: { fromCompendium: (doc) => { const d = doc.toObject(); delete d._id; return d; } },
     keybindings: { register: () => {} },
     modules: new Map([["attache-case", {}]])
@@ -239,11 +288,27 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
   globalThis.canvas = { tokens: { controlled: [] } };
 
   return {
-    notifications, hooks, settings, user, gm, actors,
+    notifications, hooks, settings, user, gm, actors, scenes, registered, menus, confirms, dialog,
     addActor(opts) {
       const a = new FakeActor(opts);
       actors.set(a.id, a);
       return a;
+    },
+    /**
+     * A scene with one token per spec.
+     * @param {Array<{base: FakeActor, linked?: boolean, flags?: object}>} specs
+     * @returns {{tokens: Collection}}
+     */
+    addScene(specs) {
+      const tokens = new Collection();
+      for (const { base, linked = false, flags = {} } of specs) {
+        const delta = linked ? null : { flags: clone(flags) };
+        const token = { id: newId(), actorLink: linked, delta, actor: linked ? base : new FakeTokenActor(base, delta) };
+        tokens.set(token.id, token);
+      }
+      const scene = { id: newId(), tokens };
+      scenes.set(scene.id, scene);
+      return scene;
     }
   };
 }

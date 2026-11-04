@@ -46,7 +46,8 @@ const SIZE = Object.freeze({
 /** Item types that occupy space, per system. */
 const physicalTypes = {
   CoC7: ["weapon", "armor", "book", "item"],
-  deltagreen: ["weapon", "armor", "gear", "tome"]
+  deltagreen: ["weapon", "armor", "gear", "tome"],
+  dnd5e: ["weapon", "equipment", "consumable", "tool", "loot", "container", "backpack"]
 };
 
 /*
@@ -444,7 +445,8 @@ const KEYWORDS = [
 /** Last-resort footprints by item type. */
 const byType = {
   CoC7: { weapon: s(2, 2), armor: s(3, 3), book: s(2, 2), item: s(1, 1) },
-  deltagreen: { weapon: s(2, 2), armor: s(3, 3), tome: s(2, 2), gear: s(1, 1) }
+  deltagreen: { weapon: s(2, 2), armor: s(3, 3), tome: s(2, 2), gear: s(1, 1) },
+  dnd5e: { weapon: s(1, 1), equipment: s(1, 1), consumable: s(1, 1), tool: s(1, 1), loot: s(1, 1), container: s(1, 1), backpack: s(1, 1) }
 };
 
 /** The module's built-in size registry (see scripts/core/sizes.mjs for the shape). */

@@ -13,7 +13,8 @@ export const QA_FLAG = { scope: "world", key: "attacheQA" };
 /** Item types per system for the generic kinds used by the fixtures. */
 export const TYPES = {
   CoC7: { gear: "item", weapon: "weapon", armor: "armor", book: "book", skill: "skill" },
-  deltagreen: { gear: "gear", weapon: "weapon", armor: "armor", book: "tome", skill: "bond" }
+  deltagreen: { gear: "gear", weapon: "weapon", armor: "armor", book: "tome", skill: "bond" },
+  dnd5e: { gear: "loot", weapon: "weapon", armor: "equipment", book: "loot", skill: "feat" }
 };
 
 /**
@@ -48,14 +49,16 @@ export async function resetWorld(page) {
     await game.settings.set("attache-case", "autoPlace", true);
     await game.settings.set("attache-case", "allowWorn", true);
     await game.settings.set("attache-case", "playersCanEditSizes", false);
-    await game.settings.set("attache-case", "defaultBodyCols", 5);
-    await game.settings.set("attache-case", "defaultBodyRows", 3);
+    // The registered default depends on the system (5x3 on CoC7 and Delta Green, 8x5 on dnd5e).
+    for (const key of ["defaultBodyCols", "defaultBodyRows"]) {
+      await game.settings.set("attache-case", key, game.settings.settings.get(`attache-case.${key}`).default);
+    }
   }, QA_FLAG);
 }
 
 /**
  * Create a fixture actor (as GM) with a deterministic layout.
- * spec: {name, owner?: "Player"|null, defaultLevel?: number, body?: {cols, rows},
+ * spec: {name, actorType?, owner?: "Player"|null, defaultLevel?: number, body?: {cols, rows},
  *   containers?: [{key, name, cols, rows}],
  *   items?: [{key, name, kind: "gear"|"weapon"|"armor"|..., w, h, pos?: {c: "body"|<containerKey>, x, y, r}, worn?, img?}]}
  * Items are created with our "placed" operation option, so auto-placement never interferes.
@@ -64,7 +67,7 @@ export async function resetWorld(page) {
 export async function makeActor(page, spec) {
   return page.evaluate(async ({ spec, flag, TYPES }) => {
     const types = TYPES[game.system.id];
-    const actorType = game.system.id === "CoC7" ? "character" : "agent";
+    const actorType = spec.actorType ?? (game.system.id === "deltagreen" ? "agent" : "character");
     const ownership = { default: spec.defaultLevel ?? 0 };
     const owner = spec.owner === undefined ? "Player" : spec.owner;
     if (owner) ownership[game.users.getName(owner).id] = 3;
@@ -222,6 +225,20 @@ export async function clickMenu(page, text) {
   // Core closes the menu with an animation and then removes its element; re-opening the same menu
   // before that finishes would lose the new one, so wait until it is gone.
   await expect(page.locator("#context-menu")).toHaveCount(0);
+}
+
+/**
+ * Set the light or dark theme of this client (core `uiConfig` is a client setting).
+ * @param {"light"|"dark"} scheme
+ */
+export async function setScheme(page, scheme) {
+  await page.evaluate(async (scheme) => {
+    const cfg = foundry.utils.deepClone(game.settings.get("core", "uiConfig"));
+    cfg.colorScheme = { applications: scheme, interface: scheme };
+    await game.settings.set("core", "uiConfig", cfg);
+    game.configureUI(cfg);
+  }, scheme);
+  await page.waitForTimeout(500);
 }
 
 /** Re-export for specs that only import from here. */

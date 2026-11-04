@@ -19,6 +19,7 @@
     "Menu": {
       "OpenCase": "Maleta",
       "ItemSize": "Tamanho no Inventário",
+      "ItemArt": "Trocar Imagem…",
       "Open": "Abrir",
       "OpenSheet": "Abrir Ficha",
       "Rotate": "Girar",
@@ -36,6 +37,7 @@
     },
     "Config": {
       "SizeTitle": "Tamanho no Inventário: {name}",
+      "ArtTitle": "Imagem no Inventário: {name}",
       "ActorTitle": "Configurar: {actor}",
       "ResizeTitle": "Redimensionar: {name}",
       "GiveTitle": "Dar: {name}",
@@ -66,7 +68,10 @@
       "DeleteConfirm": "Excluir {name}?",
       "Give": "Dar",
       "Save": "Salvar",
-      "Cancel": "Cancelar"
+      "Cancel": "Cancelar",
+      "ArtPath": "Imagem",
+      "ArtHint": "Caminho de arquivo ou endereço da web. Vazio: a imagem do próprio item.",
+      "ResetBodiesConfirm": "Atores com tamanho personalizado: {count}. Voltar ao padrão?"
     },
     "Settings": {
       "DefaultBodyCols": {
@@ -76,6 +81,11 @@
       "DefaultBodyRows": {
         "Name": "Linhas da Grade do Corpo",
         "Hint": "Linhas padrão da grade no corpo. O Mestre pode mudar por ator."
+      },
+      "ResetBodies": {
+        "Name": "Redefinir Tamanhos Personalizados",
+        "Label": "Voltar ao Padrão",
+        "Hint": "Coloca todos os atores e tokens não vinculados de volta na grade padrão."
       },
       "AutoPlace": {
         "Name": "Posicionar Itens Novos",
@@ -116,7 +126,10 @@
       "NoGiveTargets": "Não há ninguém para receber.",
       "Transferred": "{name} entregue a {actor}.",
       "TransferFailed": "Não foi possível entregar {name}.",
-      "SaveFailed": "Não foi possível salvar as alterações."
+      "SaveFailed": "Não foi possível salvar as alterações.",
+      "InvalidArt": "Esse não é um caminho de imagem válido.",
+      "NoCustomBodies": "Nenhum ator tem tamanho personalizado.",
+      "BodiesCleared": "Tamanhos personalizados removidos: {count}."
     },
     "Preset": {
       "BeltPouch": {

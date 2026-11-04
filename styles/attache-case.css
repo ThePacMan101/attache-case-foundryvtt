@@ -765,12 +765,46 @@ body.attache-dragging * {
   font-variant-numeric: tabular-nums;
 }
 
+.attache-art-config .attache-art-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attache-art-config .attache-art-preview {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  padding: 4px;
+  border-radius: 4px;
+  background: linear-gradient(var(--attache-felt), var(--attache-felt-deep));
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.attache-art-config .attache-art-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+
+.attache-art-config .attache-reset {
+  margin-bottom: 8px;
+}
+
+.attache-art-config .attache-art-head .hint {
+  flex: 1;
+  margin: 0;
+}
+
 .attache-size-config .attache-default {
   flex: 1;
   margin: 0;
 }
 
-.attache-size-config .attache-reset {
+.attache-size-config .attache-reset,
+.attache-art-config .attache-reset {
   width: auto;
   margin-left: auto;
   display: flex;

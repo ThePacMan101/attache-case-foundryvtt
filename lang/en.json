@@ -19,6 +19,7 @@
     "Menu": {
       "OpenCase": "Attaché Case",
       "ItemSize": "Inventory Size",
+      "ItemArt": "Change Image…",
       "Open": "Open",
       "OpenSheet": "Open Sheet",
       "Rotate": "Rotate",
@@ -36,6 +37,7 @@
     },
     "Config": {
       "SizeTitle": "Inventory Size: {name}",
+      "ArtTitle": "Inventory Image: {name}",
       "ActorTitle": "Configure: {actor}",
       "ResizeTitle": "Resize: {name}",
       "GiveTitle": "Give: {name}",
@@ -66,7 +68,10 @@
       "DeleteConfirm": "Delete {name}?",
       "Give": "Give",
       "Save": "Save",
-      "Cancel": "Cancel"
+      "Cancel": "Cancel",
+      "ArtPath": "Image",
+      "ArtHint": "A file path or web address. Empty: the item's own image.",
+      "ResetBodiesConfirm": "Actors with a custom size: {count}. Put them back on the default?"
     },
     "Settings": {
       "DefaultBodyCols": {
@@ -76,6 +81,11 @@
       "DefaultBodyRows": {
         "Name": "Body Grid Rows",
         "Hint": "Default rows of the on-person grid. GMs can override it per actor."
+      },
+      "ResetBodies": {
+        "Name": "Reset Custom Sizes",
+        "Label": "Reset to Default",
+        "Hint": "Puts every actor and unlinked token back on the default grid."
       },
       "AutoPlace": {
         "Name": "Place New Items",
@@ -116,7 +126,10 @@
       "NoGiveTargets": "Nobody to give it to.",
       "Transferred": "{name} given to {actor}.",
       "TransferFailed": "Could not give {name}.",
-      "SaveFailed": "Could not save the changes."
+      "SaveFailed": "Could not save the changes.",
+      "InvalidArt": "That is not a valid image path.",
+      "NoCustomBodies": "No actor has a custom size.",
+      "BodiesCleared": "Custom sizes cleared: {count}."
     },
     "Preset": {
       "BeltPouch": {

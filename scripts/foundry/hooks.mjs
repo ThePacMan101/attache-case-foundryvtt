@@ -6,13 +6,14 @@
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
 import { canMove, findSpot, withPlacement } from "../core/layout.mjs";
-import { isSupportedActor, isSupportedSystem, moduleFlags } from "./system-adapter.mjs";
+import { canEditArt, isSupportedActor, isSupportedSystem, moduleFlags, profile } from "./system-adapter.mjs";
 import { getState, itemSize, isWorn, packUnstowed } from "./inventory.mjs";
 import { autoPlaceEnabled, canEditSizes } from "../settings.mjs";
 import { loc, notify, flagPath } from "./util.mjs";
 import { AttacheCaseApp } from "../apps/attache-case-app.mjs";
 import { ActorConfig } from "../apps/actor-config.mjs";
 import { ItemSizeConfig } from "../apps/item-size-config.mjs";
+import { ItemArtConfig } from "../apps/item-art-config.mjs";
 
 /* -------------------------------------------- */
 /*  Auto-placement                              */
@@ -143,7 +144,8 @@ function refresh(actor, item, changed) {
     const ours = foundry.utils.hasProperty(changed ?? {}, `flags.${MODULE_ID}`);
     const info = itemSize(item);
     if (!ours && !info.size && !info.container && !info.excluded) return;
-    if (changed && !ours && !VISIBLE_KEYS.some((k) => k in changed)) return;
+    const visible = VISIBLE_KEYS.some((k) => k in (changed ?? {})) || profile()?.visibleSystemKeys?.some((k) => k in (changed?.system ?? {}));
+    if (changed && !ours && !visible) return;
     // The GM dialog has unsaved inputs: a player moving an item (pos/worn) must not wipe them.
     const configKeys = Object.keys(changed?.flags?.[MODULE_ID] ?? {}).filter((k) => !PLACEMENT_KEYS.has(k.replace(/^-=/, "")));
     if (info.container || configKeys.length) ActorConfig.refreshFor(actor);
@@ -166,6 +168,7 @@ function onUpdateActor(actor, changed) {
 
 const OPEN_ACTION = "attacheCaseOpen";
 const SIZE_ACTION = "attacheCaseItemSize";
+const ART_ACTION = "attacheCaseItemArt";
 
 /**
  * Header controls are hook-added entries of the window's kebab menu. The entry carries
@@ -182,12 +185,16 @@ function onActorSheetControls(app, controls) {
 
 function onItemSheetControls(app, controls) {
   const item = app.document;
-  if (!isSupportedSystem() || !item || controls.some((c) => c.action === SIZE_ACTION)) return;
+  if (!isSupportedSystem() || !item) return;
   const info = itemSize(item);
-  if ((info.source === "nonPhysical" && !info.container) || !canEditSizes(item)) return;
-  const handler = () => ItemSizeConfig.open(item);
-  app.options.actions[SIZE_ACTION] ??= handler;
-  controls.push({ action: SIZE_ACTION, icon: "fa-solid fa-ruler-combined", label: "ATTACHE.Menu.ItemSize", visible: true, onClick: handler });
+  if (info.source === "nonPhysical" && !info.container) return;
+  const add = (action, icon, label, handler) => {
+    if (controls.some((c) => c.action === action)) return;
+    app.options.actions[action] ??= handler;
+    controls.push({ action, icon, label, visible: true, onClick: handler });
+  };
+  if (canEditSizes(item)) add(SIZE_ACTION, "fa-solid fa-ruler-combined", "ATTACHE.Menu.ItemSize", () => ItemSizeConfig.open(item));
+  if (canEditArt(item)) add(ART_ACTION, "fa-solid fa-image", "ATTACHE.Menu.ItemArt", () => ItemArtConfig.open(item));
 }
 
 function onActorContextOptions(app, entries) {
@@ -197,7 +204,10 @@ function onActorContextOptions(app, entries) {
     label: "ATTACHE.Menu.OpenCase",
     icon: "fa-solid fa-briefcase",
     group: MODULE_ID,
-    visible: (li) => Boolean(actorOf(li)?.testUserPermission(game.user, "OBSERVER")),
+    visible: (li) => {
+      const actor = actorOf(li);
+      return isSupportedActor(actor) && actor.testUserPermission(game.user, "OBSERVER");
+    },
     onClick: (_event, li) => AttacheCaseApp.open(actorOf(li))
   });
 }
@@ -259,6 +269,8 @@ export function registerHooks() {
   Hooks.on("deleteActor", (actor) => AttacheCaseApp.get(actor)?.close());
   Hooks.on("getHeaderControlsActorSheetV2", onActorSheetControls);
   Hooks.on("getHeaderControlsItemSheetV2", onItemSheetControls);
+  // dnd5e's ItemSheet5e and ContainerSheet extend DocumentSheetV2, not ItemSheetV2.
+  Hooks.on("getHeaderControlsItemSheet5e", onItemSheetControls);
   Hooks.on("getActorContextOptions", onActorContextOptions);
 }
 

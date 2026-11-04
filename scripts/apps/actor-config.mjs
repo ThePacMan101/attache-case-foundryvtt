@@ -4,7 +4,8 @@
  */
 
 import { MODULE_ID, MAX_DIM, BODY_ID } from "../constants.mjs";
-import { CONTAINER_PRESETS } from "../data/container-presets.mjs";
+import { bindArtFallback } from "../core/art.mjs";
+import { containerPresets, displayImg } from "../foundry/system-adapter.mjs";
 import * as service from "../foundry/inventory.mjs";
 import { defaultBody } from "../settings.mjs";
 import { loc, notify } from "../foundry/util.mjs";
@@ -91,9 +92,9 @@ export class ActorConfig extends HandlebarsApplicationMixin(ApplicationV2) {
       body: { cols: body.cols, rows: body.rows, useDefault: !body.custom },
       defaultLabel: loc("ATTACHE.Config.UseDefault", { size: size(def.cols, def.rows) }),
       containers: state.containers.filter((c) => c.id !== BODY_ID).map((c) => ({
-        id: c.id, name: c.item.name, img: c.item.img, cols: c.cols, rows: c.rows
+        id: c.id, name: c.item.name, art: displayImg(c.item), cols: c.cols, rows: c.rows
       })),
-      presets: CONTAINER_PRESETS.map((p) => ({ key: p.key, label: `${loc(p.name)} (${size(p.cols, p.rows)})` })),
+      presets: containerPresets().map((p) => ({ key: p.key, label: `${loc(p.name)} (${size(p.cols, p.rows)})` })),
       buttons: [{ type: "submit", icon: "fa-solid fa-floppy-disk", label: "ATTACHE.Config.Save" }]
     });
   }
@@ -101,6 +102,7 @@ export class ActorConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
+    bindArtFallback(this.element);
     // Toggling "use world default" greys out the body fields without a re-render.
     this.element.addEventListener("change", (event) => {
       if (event.target.name === "body.useDefault") this.#syncBody();

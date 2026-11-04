@@ -5,12 +5,14 @@
  */
 
 import { MODULE_ID, BODY_ID } from "../constants.mjs";
+import { bindArtFallback } from "../core/art.mjs";
 import * as service from "../foundry/inventory.mjs";
-import { isSupportedActor, isArmor } from "../foundry/system-adapter.mjs";
+import { canEditArt, displayImg, isSupportedActor, isArmor } from "../foundry/system-adapter.mjs";
 import { cellSize, showNames, wornEnabled, canEditSizes } from "../settings.mjs";
 import { loc, notify, typeLabel } from "../foundry/util.mjs";
 import { DragController, screenScale } from "./drag-controller.mjs";
 import { ItemSizeConfig } from "./item-size-config.mjs";
+import { ItemArtConfig } from "./item-art-config.mjs";
 import { ActorConfig } from "./actor-config.mjs";
 import { promptGiveTarget, promptResize, confirmDialog } from "./dialogs.mjs";
 
@@ -246,7 +248,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
         if (p.c !== ct.id) continue;
         const { item, size: s } = state.entries.get(id);
         tiles.push({
-          id, name: item.name, img: item.img, x: p.x, y: p.y, w: p.w, h: p.h, uw: s.w, uh: s.h, r: p.r,
+          id, name: item.name, art: displayImg(item), x: p.x, y: p.y, w: p.w, h: p.h, uw: s.w, uh: s.h, r: p.r,
           small: p.w === 1 || p.h === 1,
           tooltip: this.#tooltip(item, s)
         });
@@ -255,7 +257,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
         id: ct.id,
         isBody: ct.id === BODY_ID,
         name: ct.item?.name ?? loc("ATTACHE.Window.Body"),
-        img: ct.item?.img ?? null,
+        art: ct.item ? displayImg(ct.item) : null,
         cols: ct.cols,
         rows: ct.rows,
         dims: loc("ATTACHE.Window.Size", { w: ct.cols, h: ct.rows }),
@@ -270,7 +272,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const chip = (item, kind) => {
       const s = state.entries.get(item.id)?.size ?? service.itemSize(item).size;
       return {
-        id: item.id, name: item.name, img: item.img, kind,
+        id: item.id, name: item.name, art: displayImg(item), kind,
         size: s ? size(s) : "",
         tooltip: this.#tooltip(item, s),
         draggable: editable && Boolean(s)
@@ -303,6 +305,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
     await super._onFirstRender(context, options);
     const root = this.element;
     root.dataset.actorUuid = this.actor.uuid;
+    bindArtFallback(root);
     this.drag.bind(root);
     root.addEventListener("dblclick", (event) => this.#onDoubleClick(event));
     root.addEventListener("pointerover", (event) => {
@@ -599,6 +602,11 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
         label: "ATTACHE.Menu.ItemSize", icon: "fa-solid fa-ruler-combined",
         visible: (li) => canEditSizes(item(li)),
         onClick: (_e, li) => ItemSizeConfig.open(item(li))
+      },
+      {
+        label: "ATTACHE.Menu.ItemArt", icon: "fa-solid fa-image",
+        visible: (li) => canEditArt(item(li)),
+        onClick: (_e, li) => ItemArtConfig.open(item(li))
       },
       {
         label: "ATTACHE.Menu.Exclude", icon: "fa-solid fa-eye-slash",

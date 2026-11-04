@@ -4,8 +4,9 @@
  */
 
 import { MODULE_ID, MAX_DIM, FLAGS } from "../constants.mjs";
+import { bindArtFallback } from "../core/art.mjs";
 import { explainSize, sanitizeContainer, sanitizeSize } from "../core/sizes.mjs";
-import { describe, moduleFlags } from "../foundry/system-adapter.mjs";
+import { describe, displayImg, moduleFlags } from "../foundry/system-adapter.mjs";
 import { registry, setItemConfig } from "../foundry/inventory.mjs";
 import { canEditSizes } from "../settings.mjs";
 import { loc, notify } from "../foundry/util.mjs";
@@ -99,6 +100,7 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     return Object.assign(context, {
       rootId: this.id,
       item: this.item,
+      art: displayImg(this.item),
       max: MAX_DIM,
       w: size.w,
       h: size.h,
@@ -120,6 +122,7 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
     const form = this.element;
+    bindArtFallback(form);
     const onEdit = (event) => {
       if ((event.target.name === "w" || event.target.name === "h") && form.elements.useDefault) {
         form.elements.useDefault.value = "false";
