@@ -31,18 +31,21 @@ machine has them (below), starts Foundry, copies the v14 client source to `dev/c
 |---|---|---|---|---|---|
 | `WORLDS` | `attache-coc7` | CoC7 | `attache-case` | `Investigator Test` | `smoke`, `scenarios`, `visual`, zip check |
 | `WORLDS` | `attache-dg` | deltagreen | `attache-case` | `Agent Test` | `smoke`, `scenarios`, `visual`, zip check |
-| `DND5E_WORLDS` | `attache-dnd5e` | dnd5e 5.3.3 | `attache-case` | `Adventurer Test` | `dnd5e-load`, `spikes` |
+| `DND5E_WORLDS` | `attache-dnd5e` | dnd5e 5.3.3 | `attache-case` | `Adventurer Test` | `dnd5e-load`, `art`, `body-defaults`, `spikes` |
 | `DND5E_WORLDS` | `attache-dnd5e-plutonium` | dnd5e 5.3.3 | `attache-case`, `plutonium`, `lib-wrapper` | `Adventurer Test` | `dnd5e-load`, `spikes` |
 
 Re-running only fills in what is missing. It ends on the setup screen. The dnd5e worlds are seeded by item name
-from `dnd5e.equipment24`, on their own code path. They are not in `WORLDS` because the module has no dnd5e
-profile until M1, so `smoke`, `scenarios` and `visual` cannot run there yet.
+from `dnd5e.equipment24`, on their own code path. They are not in `WORLDS`, so `smoke`, `scenarios` and `visual`
+stay on CoC7 and Delta Green, and `art` and `body-defaults` add `attache-dnd5e` themselves.
+
+`dev/setup.sh` first runs `dev/guard-mnt-c.sh dev/data dev/cache`, which resolves symlinks and exits 3 for
+anything under `/mnt/c`. `dev/install-plutonium.sh` runs the same guard on its destination.
 
 ### Plutonium (local copy, never committed)
 
 `dev/install-plutonium.sh` (called by `dev/setup.sh`) copies `plutonium` and `lib-wrapper` from the owner's install
 into the gitignored `dev/data/Data/modules/`, owned by uid 1000. The source is bind-mounted read-only; any destination
-under `/mnt/c` is refused; a matching copied version is left alone. Without the source (CI) it is a no-op:
+under `/mnt/c` is refused (`dev/guard-mnt-c.sh`); a matching copied version is left alone. Without the source (CI) it is a no-op:
 `attache-dnd5e-plutonium` is not created and everything that needs it skips. Plutonium is unlicensed paid content: it stays
 in `dev/data`, never in tracked files or fixtures. Setup presets `dataSources.isNoPrereleaseBrewIndexes` and
 `misc.isSkipBackendCheck` so that it needs no network; specs block `*5e.tools` with `FIVE_E_TOOLS`.
@@ -61,7 +64,9 @@ dev/e2e/run.sh smoke.spec.mjs -g dg      # one world
 dev/e2e/run.sh dnd5e-load.spec.mjs       # both dnd5e worlds, GM and Player
 ```
 
-`dnd5e-load.spec.mjs` only proves loading: the module is active and no console error mentions it.
+`dnd5e-load.spec.mjs` proves loading on both dnd5e worlds (module active, no console error mentions it), and on the
+clean one opening with real clicks: sheet kebab, Actor Directory menu and `I` for GM and Player, npc and vehicle
+sheets, no entry on group and encounter actors, the item and container sheet menus, and the preset list.
 
 Per world: launch, log in as Gamemaster, assert `game.system.id`, module active,
 `api.open` is a function, Attaché Case header control on the seeded actor's sheet (soft), open the case
@@ -77,6 +82,8 @@ dev/e2e/run.sh scenarios.spec.mjs -g "attache-dg.*05"   # one scenario in one wo
 dev/e2e/run.sh visual.spec.mjs                    # showcase actor, dark + light, next to the system sheet
 SAVE_DOCS=1 dev/e2e/run.sh visual.spec.mjs -g coc7      # also refresh docs/screenshot-{dark,light}.png
 QA_SHOTS=1 dev/e2e/run.sh scenarios.spec.mjs -g ...     # screenshot every pointer drag mid-flight
+dev/e2e/run.sh art.spec.mjs                       # alternative images, CoC7 + Delta Green + clean dnd5e (~6 min)
+dev/e2e/run.sh body-defaults.spec.mjs             # default size per system and the GM reset, same worlds (~5 min)
 dev/e2e/run.sh                                    # everything (all the specs below and above)
 ```
 

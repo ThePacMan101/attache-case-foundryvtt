@@ -157,6 +157,16 @@ for (const [worldId, meta] of Object.entries(SIZE_WORLDS)) {
       const plRoot = await openCase(pl.page, second.actorId);
       await expect(bodyPanel(plRoot)).toHaveAttribute("style", /--cols: 9; --rows: 1/);
 
+      // The GM keeps the case of the token that only inherits open: nothing tells it about the base
+      // actor's change except our own refresh.
+      const tokenUuid = await page.evaluate(({ s, t }) => {
+        const { actor } = game.scenes.get(s).tokens.get(t);
+        game.modules.get("attache-case").api.open(actor);
+        return actor.uuid;
+      }, { s: tokens.scene, t: tokens.inherits });
+      const tokenRoot = page.locator(`.application.attache-case[data-actor-uuid="${tokenUuid}"]`);
+      await expect(bodyPanel(tokenRoot)).toHaveAttribute("style", /--cols: 2; --rows: 2/);
+
       sc = await openSettings(page);
       for (const scheme of ["light", "dark"]) {
         await setScheme(page, scheme);
@@ -198,6 +208,7 @@ for (const [worldId, meta] of Object.entries(SIZE_WORLDS)) {
 
       // Everybody now reads the world default, including an open window on the Player's client.
       await expect(bodyPanel(plRoot)).toHaveAttribute("style", wantStyle);
+      await expect(bodyPanel(tokenRoot), "the open window of an unlinked token follows its base").toHaveAttribute("style", wantStyle);
       await expect.poll(async () => (await layout(pl.page, second.actorId)).containers[0]).toMatchObject(want);
       const tokenDims = await page.evaluate(({ s, t }) => {
         const c = game.modules.get("attache-case").api.getLayout(game.scenes.get(s).tokens.get(t).actor).containers[0];

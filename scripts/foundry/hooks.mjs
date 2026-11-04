@@ -120,7 +120,14 @@ function onUpdateItem(item, changed, _options, userId) {
   if (only.length) packUnstowed(actor, { only }).catch((err) => console.error(`${MODULE_ID} |`, err));
 }
 
+/** The dialogs of an item that no longer exists: saving in one could only fail. */
+function closeItemDialogs(item) {
+  const id = item.uuid.replaceAll(".", "-");
+  for (const prefix of ["attache-art-", "attache-size-"]) foundry.applications.instances.get(`${prefix}${id}`)?.close();
+}
+
 function onDeleteItem(item) {
+  closeItemDialogs(item);
   const actor = item.parent;
   if (isSupportedActor(actor)) refresh(actor, item);
 }
@@ -156,10 +163,19 @@ function refresh(actor, item, changed) {
 /** Item flags that only record where an item sits. */
 const PLACEMENT_KEYS = new Set([FLAGS.POS, FLAGS.WORN]);
 
-function onUpdateActor(actor, changed) {
-  if (!isSupportedActor(actor)) return;
+function refreshActorWindows(actor, changed) {
   if (["name", "img", "ownership", "flags"].some((k) => k in changed)) AttacheCaseApp.refreshFor(actor);
   if ("name" in changed || changed.flags?.[MODULE_ID]) ActorConfig.refreshFor(actor);
+}
+
+function onUpdateActor(actor, changed) {
+  if (!isSupportedActor(actor)) return;
+  refreshActorWindows(actor, changed);
+  if (actor.isToken) return;
+  // An unlinked token inherits from this actor, but core fires no updateActor for it.
+  for (const token of actor.getDependentTokens()) {
+    if (!token.actorLink && token.actor) refreshActorWindows(token.actor, changed);
+  }
 }
 
 /* -------------------------------------------- */
@@ -266,7 +282,10 @@ export function registerHooks() {
   Hooks.on("deleteItem", onDeleteItem);
   Hooks.on("createActor", onCreateActor);
   Hooks.on("updateActor", onUpdateActor);
-  Hooks.on("deleteActor", (actor) => AttacheCaseApp.get(actor)?.close());
+  Hooks.on("deleteActor", (actor) => {
+    AttacheCaseApp.get(actor)?.close();
+    for (const item of actor.items) closeItemDialogs(item);
+  });
   Hooks.on("getHeaderControlsActorSheetV2", onActorSheetControls);
   Hooks.on("getHeaderControlsItemSheetV2", onItemSheetControls);
   // dnd5e's ItemSheet5e and ContainerSheet extend DocumentSheetV2, not ItemSheetV2.

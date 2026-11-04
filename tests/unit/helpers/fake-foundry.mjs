@@ -143,7 +143,12 @@ export class FakeActor {
         out.push(item);
       }
     }
+    for (const item of out) globalThis.Hooks.call("deleteItem", item, {}, game.user.id);
     return out;
+  }
+  /** Every token built on this actor, linked or not, as core's Actor#getDependentTokens. */
+  getDependentTokens() {
+    return this.dependentTokens ?? [];
   }
 }
 
@@ -156,6 +161,7 @@ class FakeTokenActor extends FakeActor {
     super({ name: `${base.name} (token)` });
     this.base = base;
     this.delta = delta;
+    this.isToken = true;
   }
   getFlag(scope, key) {
     return this.delta.flags?.[scope]?.[key] ?? this.base.getFlag(scope, key);
@@ -262,7 +268,11 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
     notifications: Object.fromEntries(["info", "warn", "error", "success"].map((t) => [t, (msg) => notifications.push({ type: t, msg })]))
   };
   globalThis.CONFIG = { Item: { typeLabels: {} }, queries: {} };
-  globalThis.CONST = { SORT_INTEGER_DENSITY: 100000, KEYBINDING_PRECEDENCE: { NORMAL: 1 } };
+  globalThis.CONST = {
+    SORT_INTEGER_DENSITY: 100000,
+    KEYBINDING_PRECEDENCE: { NORMAL: 1 },
+    IMAGE_FILE_EXTENSIONS: { apng: "image/apng", avif: "image/avif", bmp: "image/bmp", gif: "image/gif", jpeg: "image/jpeg", jpg: "image/jpeg", png: "image/png", svg: "image/svg+xml", tiff: "image/tiff", webp: "image/webp" }
+  };
   globalThis.Hooks = {
     on: (name, fn) => {
       if (!hooks.has(name)) hooks.set(name, []);
@@ -296,15 +306,19 @@ export function installFoundry({ system = "CoC7", isGM = false } = {}) {
     },
     /**
      * A scene with one token per spec.
-     * @param {Array<{base: FakeActor, linked?: boolean, flags?: object}>} specs
+     * @param {Array<{base: FakeActor, linked?: boolean, flags?: object, noActor?: boolean}>} specs
+     *   A linked token given `flags` keeps them as a leftover delta. `noActor`: the base is gone.
      * @returns {{tokens: Collection}}
      */
     addScene(specs) {
       const tokens = new Collection();
-      for (const { base, linked = false, flags = {} } of specs) {
-        const delta = linked ? null : { flags: clone(flags) };
-        const token = { id: newId(), actorLink: linked, delta, actor: linked ? base : new FakeTokenActor(base, delta) };
+      for (const { base, linked = false, flags, noActor = false } of specs) {
+        const delta = linked && !flags ? null : { flags: clone(flags ?? {}) };
+        const actor = noActor ? null : linked ? base : new FakeTokenActor(base, delta);
+        const token = { id: newId(), actorLink: linked, delta, actor };
         tokens.set(token.id, token);
+        if (actor && base) (base.dependentTokens ??= []).push(token);
+        if (actor && !linked) actor.dependentTokens = [token]; // core: a synthetic actor lists its own token
       }
       const scene = { id: newId(), tokens };
       scenes.set(scene.id, scene);

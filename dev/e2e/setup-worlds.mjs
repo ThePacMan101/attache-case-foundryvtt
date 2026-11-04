@@ -11,7 +11,7 @@ import fs from "node:fs";
 import { chromium } from "@playwright/test";
 import {
   FOUNDRY_URL, WORLDS, DND5E_WORLDS, FIVE_E_TOOLS, SEED_FLAG, waitForServer, ensureSetupAccess, postAction,
-  launchWorld, loginAs, waitForGameReady, waitForPlutonium, plutoniumInstalled, manifestSupports, shutdownWorld,
+  launchWorld, loginAs, waitForGameReady, waitForPlutonium, plutoniumInstalled, shutdownWorld,
   waitFor, collectConsoleErrors
 } from "./helpers.mjs";
 
@@ -183,11 +183,7 @@ async function setupDnd5eWorld(page, worldId, meta) {
     await waitForGameReady(page);
   }
   const inactive = await page.evaluate((ids) => ids.filter((id) => game.modules.get(id)?.active !== true), ids);
-  // Stays enabled in the world, so it activates by itself once module.json declares dnd5e (M1).
-  const refused = !manifestSupports(meta.system) && inactive.includes("attache-case");
-  if (refused) console.log(`[setup] ${worldId}: attache-case not served: module.json does not declare ${meta.system}`);
-  const failed = inactive.filter((id) => !(refused && id === "attache-case"));
-  if (failed.length) throw new Error(`not active in ${worldId}: ${failed.join(", ")}`);
+  if (inactive.length) throw new Error(`not active in ${worldId}: ${inactive.join(", ")}`);
   if (meta.modules.includes("plutonium") && await presetPlutonium(page)) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForGameReady(page);

@@ -8,9 +8,8 @@ import { MODULE_ID, BODY_ID, FLAGS } from "../constants.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
 import { buildLayout, findSpot, canMove, withPlacement, autoArrange as arrange } from "../core/layout.mjs";
 import { explainSize, isContainer, sanitizeContainer, sanitizeSize, mergeRegistries } from "../core/sizes.mjs";
-import { sanitizeArt } from "../core/art.mjs";
 import { footprint } from "../core/grid.mjs";
-import { describe, isArmor, isSupportedActor, moduleFlags, containerItemData, containerPresets, canEditArt } from "./system-adapter.mjs";
+import { describe, isArmor, isSupportedActor, moduleFlags, containerItemData, containerPresets, canEditArt, cleanArt } from "./system-adapter.mjs";
 import { defaultBody, wornEnabled } from "../settings.mjs";
 import { loc, notify, deletion, flagPath } from "./util.mjs";
 
@@ -685,7 +684,7 @@ export async function setItemArt(item, path) {
     if (current !== undefined) await item.update({ [flagPath(FLAGS.ART)]: deletion() });
     return true;
   }
-  const clean = sanitizeArt(path);
+  const clean = cleanArt(path);
   if (!clean) {
     notify("warn", "ATTACHE.Notify.InvalidArt");
     return false;

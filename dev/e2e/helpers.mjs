@@ -47,16 +47,6 @@ export function plutoniumInstalled() {
   return fs.existsSync(path.resolve(HERE, "..", "data", "Data", "modules", "plutonium", "module.json"));
 }
 
-/**
- * Whether module.json declares a system. The server does not even send the client a module whose
- * `relationships.systems` omits the world's system, whatever `core.moduleConfiguration` says.
- * @param {string} systemId
- */
-export function manifestSupports(systemId) {
-  const manifest = JSON.parse(fs.readFileSync(path.resolve(HERE, "..", "..", "module.json"), "utf8"));
-  return (manifest.relationships?.systems ?? []).some((s) => s.id === systemId);
-}
-
 /** Plutonium's remote host, blocked in every test so that imports are proven to work offline. */
 export const FIVE_E_TOOLS = "**/*5e.tools/**";
 

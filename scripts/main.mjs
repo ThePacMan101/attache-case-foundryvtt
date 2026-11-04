@@ -5,6 +5,7 @@
 
 import { MODULE_ID } from "./constants.mjs";
 import { registerSettings } from "./settings.mjs";
+import { registerResetBodiesMenu } from "./apps/reset-bodies.mjs";
 import { registerHooks, registerKeybindings, warnIfUnsupported } from "./foundry/hooks.mjs";
 import { registerQueries } from "./foundry/queries.mjs";
 import { containerPresets } from "./foundry/system-adapter.mjs";
@@ -13,6 +14,7 @@ import { AttacheCaseApp } from "./apps/attache-case-app.mjs";
 
 Hooks.once("init", () => {
   registerSettings(() => AttacheCaseApp.renderAll());
+  registerResetBodiesMenu();
   registerKeybindings();
   registerQueries();
   registerHooks();

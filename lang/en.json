@@ -85,7 +85,7 @@
       "ResetBodies": {
         "Name": "Reset Custom Sizes",
         "Label": "Reset to Default",
-        "Hint": "Puts every actor and unlinked token back on the default grid."
+        "Hint": "Puts every world actor and unlinked scene token back on the default grid. Compendium actors are left alone."
       },
       "AutoPlace": {
         "Name": "Place New Items",

@@ -12,7 +12,7 @@ import { test, expect } from "@playwright/test";
 import { WORLDS, DND5E_WORLDS, ARTIFACTS_DIR, moduleErrors } from "./helpers.mjs";
 import {
   session, resetWorld, makeActor, caseSel, openCase, closeAll, tilePoint, cellPoint, chipPoint,
-  pointerDrag, itemFlags, waitForFlags, clearNotifications, clickMenu, setScheme
+  pointerDrag, itemFlags, waitForFlags, clearNotifications, clickMenu, setScheme, TYPES
 } from "./qa.mjs";
 
 const ART_WORLDS = { ...WORLDS, "attache-dnd5e": DND5E_WORLDS["attache-dnd5e"] };
@@ -106,6 +106,7 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
         expect(await loaded(tileArt(root, ids.a))).toBe(true);
       }
       expect((await itemFlags(gm.page, actorId, ids.a)).art).toBeUndefined();
+      expect(await gm.page.evaluate(() => Boolean(game.users.getName("Player2"))), "resetWorld removes Player2").toBe(false);
       for (const scheme of ["light", "dark"]) {
         await setScheme(pl.page, scheme);
         await shot(pl.page, `${worldId}-art-default-${scheme}`);
@@ -128,8 +129,20 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
       await openFromTile(page, root, ids.a);
       await expect(artDialog(page).locator("file-picker button")).toHaveCount(0);
       await expect(artPreview(page)).toHaveAttribute("src", ICON);
+      // While typing nothing is fetched: a half-typed address must never go out as a request.
+      const requested = [];
+      const onRequest = (r) => {
+        const { pathname } = new URL(r.url());
+        if (pathname.includes("/icons/weapons") || pathname.endsWith("/icons") || pathname.endsWith("/i")) requested.push(pathname);
+      };
+      page.on("request", onRequest);
       await typePath(page, CHOSEN);
-      await expect(artPreview(page), "the preview follows the field").toHaveAttribute("src", CHOSEN);
+      await page.waitForTimeout(500);
+      await expect(artPreview(page), "no refresh on input").toHaveAttribute("src", ICON);
+      await page.keyboard.press("Tab");
+      await expect(artPreview(page), "the preview follows the field on change").toHaveAttribute("src", CHOSEN);
+      page.off("request", onRequest);
+      expect(requested.filter((u) => !u.endsWith(CHOSEN)), "half-typed paths requested").toEqual([]);
       for (const scheme of ["light", "dark"]) {
         await setScheme(page, scheme);
         await shot(page, `${worldId}-art-dialog-player-${scheme}`);
@@ -420,16 +433,21 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
 
     test("10 bad input is refused and cannot inject HTML", async () => {
       const { actorId, ids } = await fixture(gm.page, {
-        name: "QA Art Bad",
-        items: [{ key: "a", name: "Blade", kind: "weapon", w: 3, h: 1, pos: { c: "body", x: 0, y: 0 } }]
+        name: "QA Art Bad", body: { cols: 6, rows: 3 },
+        containers: [{ key: "bag", name: "Satchel", cols: 3, rows: 3 }],
+        items: [
+          { key: "a", name: "Blade", kind: "weapon", w: 3, h: 1, pos: { c: "body", x: 0, y: 0 } },
+          { key: "b", name: "Trinket", w: 1, h: 1 }
+        ]
       });
       const page = pl.page;
       const root = await openCase(page, actorId);
       await clearNotifications(page);
       await openFromTile(page, root, ids.a);
       const INJECT = '"><img src=x onerror="window.__attachePwned=1">';
-      for (const bad of ["javascript:alert(1)", INJECT]) {
+      for (const bad of ["javascript:alert(1)", INJECT, "api/status"]) {
         await typePath(page, bad);
+        await page.keyboard.press("Tab");
         await expect(artPreview(page), "the preview ignores it").toHaveAttribute("src", ICON);
         await save(page);
         await expect(page.locator("#notifications .notification", { hasText: "not a valid image" }).first()).toBeVisible();
@@ -442,32 +460,84 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
       await expect(artDialog(page)).toHaveCount(0);
       expect("art" in (await itemFlags(gm.page, actorId, ids.a))).toBe(false);
 
-      // A flag written behind our back never reaches the DOM as markup, for anyone.
-      await setFlag(gm.page, actorId, ids.a, INJECT);
+      // Written by the owner Player behind the dialog's back, as a console or macro could: on every
+      // surface and for both clients it never reaches the DOM as markup or goes out as a request.
       const gmRoot = await openCase(gm.page, actorId);
-      for (const [p, r] of [[page, root], [gm.page, gmRoot]]) {
-        await expect(tileArt(r, ids.a)).toHaveAttribute("src", ICON);
-        await p.waitForTimeout(300);
-        expect(await p.evaluate(() => [window.__attachePwned ?? null, document.querySelectorAll('img[src="x"]').length])).toEqual([null, 0]);
+      const statusRequests = [];
+      gm.page.on("request", (r) => {
+        if (new URL(r.url()).pathname.endsWith("/api/status")) statusRequests.push(r.url());
+      });
+      const clean = (p) => p.evaluate(() => [window.__attachePwned ?? null, document.querySelectorAll('img[src="x"]').length]);
+      await gm.page.evaluate(() => game.settings.set("attache-case", "playersCanEditSizes", true));
+      const panelOf = (r) => r.locator(`.attache-panel-header[data-container-id="${ids.bag}"] img.attache-panel-icon`);
+      for (const value of [INJECT, "api/status"]) {
+        await page.evaluate(async ({ a, list, value }) => {
+          for (const id of list) await game.actors.get(a).items.get(id).setFlag("attache-case", "art", value);
+        }, { a: actorId, list: [ids.a, ids.b, ids.bag], value });
+        await waitForFlags(gm.page, actorId, ids.bag, (f) => f.art === value);
+        for (const [p, r] of [[page, root], [gm.page, gmRoot]]) {
+          await expect.poll(() => tileArt(r, ids.a).getAttribute("src")).toBe(ICON);
+          await expect(chipArt(r, ids.b)).toHaveAttribute("src", ICON);
+          await expect(panelOf(r)).toHaveAttribute("src", "icons/svg/chest.svg");
+          await pointerDrag(p, await tilePoint(p, actorId, ids.a), await cellPoint(p, actorId, "body", 3, 2), { release: false });
+          await expect(p.locator(".attache-ghost img")).toHaveAttribute("src", ICON);
+          await p.keyboard.press("Escape");
+          await p.mouse.up();
+          await expect(p.locator(".attache-ghost")).toHaveCount(0);
+          await tile(r, ids.a).click({ button: "right" });
+          await clickMenu(p, "Inventory Size");
+          const preview = p.locator(".application.attache-size-config .attache-preview-grid img");
+          await expect(preview).toHaveAttribute("src", ICON);
+          await p.locator(".application.attache-size-config [data-action=close]").first().click();
+          await expect(preview).toHaveCount(0);
+          expect(await clean(p)).toEqual([null, 0]);
+        }
       }
+      expect(statusRequests, "nothing asked the server for /api/status").toEqual([]);
+      await gm.page.evaluate(() => game.settings.set("attache-case", "playersCanEditSizes", false));
+      await setFlag(gm.page, actorId, ids.a, INJECT);
+      await page.waitForTimeout(300);
       await openFromTile(page, root, ids.a);
       await expect(artInput(page), "not offered back as a value").toHaveValue("");
-      expect(await page.evaluate(() => [window.__attachePwned ?? null, document.querySelectorAll('img[src="x"]').length])).toEqual([null, 0]);
+      expect(await clean(page)).toEqual([null, 0]);
     });
 
     test("11 dnd5e: a Player does not see the art of an unidentified item", async () => {
       test.skip(meta.system !== "dnd5e", "the guard is a dnd5e profile member");
       const { actorId, ids } = await fixture(gm.page, {
-        name: "QA Art Unidentified",
-        items: [{ key: "a", name: "Blade", kind: "weapon", w: 3, h: 1, img: OTHER, pos: { c: "body", x: 0, y: 0 } }]
+        name: "QA Art Unidentified", body: { cols: 6, rows: 3 },
+        containers: [{ key: "bag", name: "Satchel", cols: 3, rows: 3 }],
+        items: [
+          { key: "a", name: "Blade", kind: "weapon", w: 3, h: 1, img: OTHER, pos: { c: "body", x: 0, y: 0 } },
+          { key: "b", name: "Trinket", w: 1, h: 1, img: OTHER }
+        ]
       });
-      await gm.page.evaluate(({ a, i, art }) => game.actors.get(a).items.get(i).update({
-        "flags.attache-case.art": art, "system.identified": false, "system.unidentified.name": "Strange Blade"
-      }), { a: actorId, i: ids.a, art: CHOSEN });
+      await gm.page.evaluate(async ({ a, list, art }) => {
+        for (const id of list) {
+          await game.actors.get(a).items.get(id).update({
+            "flags.attache-case.art": art, "system.identified": false, "system.unidentified.name": "Strange Thing"
+          });
+        }
+      }, { a: actorId, list: [ids.a, ids.b, ids.bag], art: CHOSEN });
+      await gm.page.evaluate(() => game.settings.set("attache-case", "playersCanEditSizes", true));
       const root = await openCase(pl.page, actorId);
       const gmRoot = await openCase(gm.page, actorId);
+      const panelOf = (r) => r.locator(`.attache-panel-header[data-container-id="${ids.bag}"] img.attache-panel-icon`);
       await expect(tileArt(root, ids.a), "Player: the item's own image").toHaveAttribute("src", OTHER);
       await expect(tileArt(gmRoot, ids.a), "GM: the chosen image").toHaveAttribute("src", CHOSEN);
+      await expect(chipArt(root, ids.b), "Player chip").toHaveAttribute("src", OTHER);
+      await expect(chipArt(gmRoot, ids.b), "GM chip").toHaveAttribute("src", CHOSEN);
+      await expect(panelOf(root), "Player bag panel").toHaveAttribute("src", "icons/svg/chest.svg");
+      await expect(panelOf(gmRoot), "GM bag panel").toHaveAttribute("src", CHOSEN);
+
+      // Size dialog, which this Player can open with the setting on.
+      await tile(root, ids.a).click({ button: "right" });
+      await clickMenu(pl.page, "Inventory Size");
+      const preview = pl.page.locator(".application.attache-size-config .attache-preview-grid img");
+      await expect(preview, "Player size preview").toHaveAttribute("src", OTHER);
+      await pl.page.locator(".application.attache-size-config [data-action=close]").first().click();
+      await expect(preview).toHaveCount(0);
+      await gm.page.evaluate(() => game.settings.set("attache-case", "playersCanEditSizes", false));
 
       // Neither the entry nor the path is offered to the Player, and the ghost follows the same rule.
       await tile(root, ids.a).click({ button: "right" });
@@ -482,9 +552,13 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
       await expect(pl.page.locator(".attache-ghost")).toHaveCount(0);
 
       // Identifying it reveals the art on the Player's open window, with no reload.
-      await gm.page.evaluate(({ a, i }) => game.actors.get(a).items.get(i).update({ "system.identified": true }), { a: actorId, i: ids.a });
+      await gm.page.evaluate(async ({ a, list }) => {
+        for (const id of list) await game.actors.get(a).items.get(id).update({ "system.identified": true });
+      }, { a: actorId, list: [ids.a, ids.b, ids.bag] });
       await expect(tileArt(root, ids.a)).toHaveAttribute("src", CHOSEN);
       await expect(tileArt(gmRoot, ids.a)).toHaveAttribute("src", CHOSEN);
+      await expect(chipArt(root, ids.b)).toHaveAttribute("src", CHOSEN);
+      await expect(panelOf(root)).toHaveAttribute("src", CHOSEN);
     });
 
     test("12 Worn chip shows the art (CoC7 and Delta Green)", async () => {
@@ -501,6 +575,72 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
       await expect(pl.page.locator(".attache-ghost img")).toHaveAttribute("src", CHOSEN);
       await pl.page.keyboard.press("Escape");
       await pl.page.mouse.up();
+    });
+
+    test("13 the dialogs close when their item is deleted or given away", async () => {
+      await gm.page.evaluate(async () => {
+        if (!game.users.getName("Player2")) await User.create({ name: "Player2", role: CONST.USER_ROLES.PLAYER });
+      });
+      const { actorId, ids } = await fixture(gm.page, {
+        name: "QA Art Gone",
+        items: [
+          { key: "a", name: "Blade", kind: "weapon", w: 3, h: 1, pos: { c: "body", x: 0, y: 0 } },
+          { key: "b", name: "Trinket", w: 1, h: 1, pos: { c: "body", x: 0, y: 1 } }
+        ]
+      });
+      const theirs = await fixture(gm.page, { name: "QA Art Gone Theirs", owner: "Player2" });
+      const root = await openCase(pl.page, actorId);
+      const gmRoot = await openCase(gm.page, actorId);
+      const gmSize = gm.page.locator(".application.attache-size-config");
+
+      // Deleted by the GM: the Player's image dialog and the GM's size dialog both go.
+      await openFromTile(pl.page, root, ids.a);
+      await tile(gmRoot, ids.a).click({ button: "right" });
+      await clickMenu(gm.page, "Inventory Size");
+      await expect(gmSize).toBeVisible();
+      await gm.page.evaluate(({ a, i }) => game.actors.get(a).items.get(i).delete(), { a: actorId, i: ids.a });
+      await expect(artDialog(pl.page)).toHaveCount(0);
+      await expect(gmSize).toHaveCount(0);
+
+      // Given away, relayed through the GM: the source is deleted on the GM's client.
+      await openFromTile(pl.page, root, ids.b);
+      await tile(gmRoot, ids.b).click({ button: "right" });
+      await clickMenu(gm.page, "Inventory Size");
+      await expect(gmSize).toBeVisible();
+      await pl.page.evaluate((a) => {
+        for (const app of foundry.applications.instances.values()) {
+          if (app.options.classes.includes("attache-art-config")) app.setPosition({ left: 20, top: 20 });
+          if (app.actor?.id === a) app.setPosition({ left: 800, top: 100 });
+        }
+      }, actorId);
+      await pl.page.waitForTimeout(300);
+      await tile(root, ids.b).click({ button: "right" });
+      await clickMenu(pl.page, "Give");
+      const dlg = pl.page.locator(".application.attache-give");
+      await dlg.locator(".attache-give-option", { hasText: "QA Art Gone Theirs" }).click();
+      await dlg.locator("button[data-action=give]").click();
+      // By name: Delta Green adds its own Unarmed Attack to a new agent.
+      await expect.poll(() => gm.page.evaluate((a) => game.actors.get(a).items.filter((i) => i.name === "Trinket").length, theirs.actorId)).toBe(1);
+      await expect(artDialog(pl.page)).toHaveCount(0);
+      await expect(gmSize).toHaveCount(0);
+    });
+
+    test("14 a compendium item keeps its art: real core fromCompendium", async () => {
+      const { actorId } = await fixture(gm.page, { name: "QA Art Pack" });
+      const got = await gm.page.evaluate(async ({ art, img, type, actorId }) => {
+        const { CompendiumCollection } = foundry.documents.collections;
+        const pack = await CompendiumCollection.createCompendium({ label: `QA Art Pack ${Date.now()}`, type: "Item" });
+        try {
+          const doc = await Item.create({ name: "Packed", type, img, flags: { "attache-case": { art, size: { w: 1, h: 1 } } } }, { pack: pack.collection });
+          const inv = await import("/modules/attache-case/scripts/foundry/inventory.mjs");
+          const created = await inv.addFromDrop(game.actors.get(actorId), { type: "Item", uuid: doc.uuid }, { kind: "auto" });
+          return { art: created?.flags["attache-case"]?.art ?? null, source: created?._stats.compendiumSource ?? null, want: doc.uuid };
+        } finally {
+          await pack.deleteCompendium();
+        }
+      }, { art: CHOSEN, img: ICON, type: TYPES[meta.system].gear, actorId });
+      expect(got.art).toBe(CHOSEN);
+      expect(got.source, "it really came through the compendium branch").toBe(got.want);
     });
 
     test("99 console: no errors or warnings from attache-case", async () => {

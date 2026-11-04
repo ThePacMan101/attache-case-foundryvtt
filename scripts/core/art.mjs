@@ -11,29 +11,47 @@ export const DEFAULT_ICON = "icons/svg/item-bag.svg";
 const FORBIDDEN = /[\u0000-\u001f\u007f<>"]/;
 const SCHEME = /^([a-z][a-z0-9+.-]*):/i;
 const WEB_SCHEMES = new Set(["http", "https"]);
+/** Only there so that relative paths parse. */
+const PARSE_BASE = "http://relative.invalid/";
+
+/** Whether the pathname, not the host or query, ends in one of the extensions. */
+function hasImageExtension(path, extensions) {
+  let pathname;
+  try {
+    ({ pathname } = new URL(path, PARSE_BASE));
+  } catch {
+    return false;
+  }
+  const extension = pathname.match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase();
+  return Boolean(extension) && extensions.includes(extension);
+}
 
 /**
- * Validate an image path or URL.
+ * Validate an image path or URL. Without an image extension a value would make every viewer's browser
+ * request whatever it names, which core refuses for `img` too.
  * @param {*} value
+ * @param {string[]} [extensions] lowercase image extensions; none given refuses everything
  * @returns {string|null} the trimmed path, or null when it cannot be used as item art
  */
-export function sanitizeArt(value) {
+export function sanitizeArt(value, extensions = []) {
   if (typeof value !== "string") return null;
   const path = value.trim();
   if (!path || FORBIDDEN.test(path)) return null;
   const scheme = path.match(SCHEME)?.[1].toLowerCase();
-  return scheme && !WEB_SCHEMES.has(scheme) ? null : path;
+  if (scheme && !WEB_SCHEMES.has(scheme)) return null;
+  return hasImageExtension(path, extensions) ? path : null;
 }
 
 /**
  * What an image element should show: `src` first, then `fallback` if that file fails to load.
  * @param {{art?: *, img?: *}} source the `art` flag and the item's own image
- * @param {{conceal?: boolean}} [options] conceal: ignore the art (see the system profile)
+ * @param {{conceal?: boolean, extensions?: string[]}} [options] conceal: ignore the art (see the
+ *   system profile); extensions: as in sanitizeArt
  * @returns {{src: string, fallback: string}} an empty fallback ends the chain
  */
-export function resolveArt({ art, img } = {}, { conceal = false } = {}) {
+export function resolveArt({ art, img } = {}, { conceal = false, extensions = [] } = {}) {
   const own = typeof img === "string" && img ? img : DEFAULT_ICON;
-  const chosen = conceal ? null : sanitizeArt(art);
+  const chosen = conceal ? null : sanitizeArt(art, extensions);
   if (chosen) return { src: chosen, fallback: own };
   return { src: own, fallback: own === DEFAULT_ICON ? "" : DEFAULT_ICON };
 }

@@ -3,11 +3,7 @@
  */
 
 import { MODULE_ID, SETTINGS, DEFAULT_CELL_SIZE, CELL_SIZE_RANGE, MAX_DIM } from "./constants.mjs";
-import { defaultBodyFor } from "./core/body-defaults.mjs";
-import { ResetBodies } from "./apps/reset-bodies.mjs";
-
-/** Key of the settings menu that clears per-actor sizes. */
-const RESET_BODIES_MENU = "resetBodies";
+import { defaultBodyFor } from "./foundry/system-adapter.mjs";
 
 /**
  * Register every setting. Call during `init`.
@@ -23,21 +19,14 @@ export function registerSettings(refresh) {
     name: `${key(name)}.Name`, hint: `${key(name)}.Hint`, scope, config: true
   });
 
-  // Core stores only what the GM saved, so a saved value wins over this per-system default.
+  // A saved value wins over this per-system default. Any Save in the settings form stores every value
+  // it displays, so such a world keeps today's default even if this one changes in a later version.
   const body = defaultBodyFor(game.system.id);
   game.settings.register(MODULE_ID, SETTINGS.DEFAULT_BODY_COLS, {
     ...common("DefaultBodyCols", "world"), type: dim(body.cols), default: body.cols, onChange: refresh
   });
   game.settings.register(MODULE_ID, SETTINGS.DEFAULT_BODY_ROWS, {
     ...common("DefaultBodyRows", "world"), type: dim(body.rows), default: body.rows, onChange: refresh
-  });
-  game.settings.registerMenu(MODULE_ID, RESET_BODIES_MENU, {
-    name: `${key("ResetBodies")}.Name`,
-    label: `${key("ResetBodies")}.Label`,
-    hint: `${key("ResetBodies")}.Hint`,
-    icon: "fa-solid fa-arrow-rotate-left",
-    type: ResetBodies,
-    restricted: true
   });
   game.settings.register(MODULE_ID, SETTINGS.AUTO_PLACE, {
     ...common("AutoPlace", "world"), type: new BooleanField({ initial: true }), default: true

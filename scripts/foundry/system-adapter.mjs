@@ -4,9 +4,8 @@
  * descriptor from a Foundry Item.
  */
 
-import { MODULE_ID, FLAGS } from "../constants.mjs";
-import { resolveArt } from "../core/art.mjs";
-import { defaultBodyFor } from "../core/body-defaults.mjs";
+import { MODULE_ID, FLAGS, DEFAULT_BODY } from "../constants.mjs";
+import { resolveArt, sanitizeArt } from "../core/art.mjs";
 import { CONTAINER_PRESETS } from "../data/container-presets.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
 
@@ -37,7 +36,7 @@ const PROFILES = Object.freeze({
     containerType: "item",
     describe: (description) => ({ description: { value: description } }),
     coreId: (item) => item.flags?.CoC7?.cocidFlag?.id || null,
-    defaultBody: defaultBodyFor("CoC7"),
+    defaultBody: DEFAULT_BODY,
     presets: CONTAINER_PRESETS
   }),
   deltagreen: Object.freeze({
@@ -46,7 +45,7 @@ const PROFILES = Object.freeze({
     containerType: "gear",
     describe: (description) => ({ description }),
     coreId: () => null,
-    defaultBody: defaultBodyFor("deltagreen"),
+    defaultBody: DEFAULT_BODY,
     presets: CONTAINER_PRESETS
   }),
   dnd5e: Object.freeze({
@@ -55,7 +54,7 @@ const PROFILES = Object.freeze({
     containerType: "container",
     describe: (description) => ({ description: { value: description } }),
     coreId: () => null,
-    defaultBody: defaultBodyFor("dnd5e"),
+    defaultBody: Object.freeze({ cols: 8, rows: 5 }),
     presets: CONTAINER_PRESETS.filter((p) => DND5E_PRESET_KEYS.has(p.key)),
     actorTypes: ["character", "npc", "vehicle"],
     visibleSystemKeys: ["identified"],
@@ -99,6 +98,15 @@ export function isSupportedActor(actor) {
   return !types || types.includes(actor.type);
 }
 
+/**
+ * The body grid of a system when the GM saved no other value.
+ * @param {string} id system id
+ * @returns {Readonly<{cols:number, rows:number}>}
+ */
+export function defaultBodyFor(id) {
+  return Object.hasOwn(PROFILES, id) ? PROFILES[id].defaultBody : DEFAULT_BODY;
+}
+
 /** @returns {ReadonlyArray<object>} the container presets of the active system */
 export function containerPresets() {
   return profile()?.presets ?? CONTAINER_PRESETS;
@@ -123,6 +131,20 @@ export function moduleFlags(item) {
   return flags && typeof flags === "object" ? flags : {};
 }
 
+/** @returns {string[]} what core accepts as an image file */
+export function imageExtensions() {
+  return Object.keys(CONST.IMAGE_FILE_EXTENSIONS);
+}
+
+/**
+ * Validate a value for the `art` flag.
+ * @param {*} value
+ * @returns {string|null} the clean path, or null when it cannot be used
+ */
+export function cleanArt(value) {
+  return sanitizeArt(value, imageExtensions());
+}
+
 /**
  * The image a user sees for an item, with what to try if that file does not load.
  * @param {Item|object} item
@@ -131,7 +153,7 @@ export function moduleFlags(item) {
  */
 export function displayImg(item, user = game.user) {
   const conceal = Boolean(profile()?.concealsArt?.(item, user));
-  return resolveArt({ art: moduleFlags(item)[FLAGS.ART], img: item?.img }, { conceal });
+  return resolveArt({ art: moduleFlags(item)[FLAGS.ART], img: item?.img }, { conceal, extensions: imageExtensions() });
 }
 
 /**

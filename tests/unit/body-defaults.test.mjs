@@ -1,13 +1,15 @@
+import { readFileSync } from "node:fs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFoundry } from "./helpers/fake-foundry.mjs";
 
 const env = installFoundry({ system: "CoC7" });
-const { defaultBodyFor } = await import("../../scripts/core/body-defaults.mjs");
 const { registerSettings, defaultBody } = await import("../../scripts/settings.mjs");
 const adapter = await import("../../scripts/foundry/system-adapter.mjs");
+const { defaultBodyFor } = adapter;
 const svc = await import("../../scripts/foundry/inventory.mjs");
 const { registerHooks } = await import("../../scripts/foundry/hooks.mjs");
-const { ResetBodies, resetBodies } = await import("../../scripts/apps/reset-bodies.mjs");
+const { ResetBodies, resetBodies, registerResetBodiesMenu } = await import("../../scripts/apps/reset-bodies.mjs");
+const { AttacheCaseApp } = await import("../../scripts/apps/attache-case-app.mjs");
 const { CONTAINER_PRESETS } = await import("../../scripts/data/container-presets.mjs");
 const { DEFAULT_REGISTRY } = await import("../../scripts/data/default-sizes.mjs");
 
@@ -40,6 +42,13 @@ beforeEach(() => {
 });
 
 describe("defaultBodyFor", () => {
+  it("reads the profile member", () => {
+    for (const system of ["dnd5e", "CoC7", "deltagreen"]) {
+      game.system.id = system;
+      expect(defaultBodyFor(system)).toBe(adapter.profile().defaultBody);
+    }
+  });
+
   it("is 8x5 on dnd5e, 5x3 on CoC7 and Delta Green", () => {
     expect(defaultBodyFor("dnd5e")).toEqual({ cols: 8, rows: 5 });
     expect(defaultBodyFor("CoC7")).toEqual({ cols: 5, rows: 3 });
@@ -87,12 +96,18 @@ describe("default body settings", () => {
 });
 
 describe("reset menu registration", () => {
-  it("registers a GM-only menu with an application core can construct and render", () => {
+  it("settings.mjs does not import the app: no settings -> reset-bodies -> inventory -> settings cycle", () => {
+    const source = readFileSync(new URL("../../scripts/settings.mjs", import.meta.url), "utf8");
+    expect(source).not.toMatch(/from\s+"[^"]*apps\//);
+    expect(env.menus.size).toBe(0); // registerSettings alone adds no menu
+  });
+
+  it("registers a GM-only menu with the application core will construct and render", () => {
+    registerResetBodiesMenu();
     const menu = env.menus.get(`${M}.resetBodies`);
     expect(menu).toBeTruthy();
     expect(menu.restricted).toBe(true);
     expect(menu.type).toBe(ResetBodies);
-    expect(ResetBodies.prototype).toBeInstanceOf(foundry.applications.api.ApplicationV2);
     for (const key of ["name", "label", "hint"]) expect(menu[key]).toMatch(/^ATTACHE\.Settings\.ResetBodies\./);
   });
 });
@@ -170,18 +185,69 @@ describe("reset of custom sizes", () => {
     expect(env.notifications.map((n) => n.type)).toContain("error");
   });
 
-  it("does nothing for a non-GM, even when reached directly", async () => {
+  it("does nothing for a non-GM, even when reached directly, and says why", async () => {
     game.user.isGM = false;
     const a = env.addActor({ flags: customBody() });
     await resetBodies();
     await new ResetBodies().render(true);
     expect(env.confirms).toEqual([]);
     expect(a.log).toEqual([]);
+    expect(env.notifications.map((n) => [n.type, n.msg])).toEqual([
+      ["warn", "ATTACHE.Notify.NoPermission"], ["warn", "ATTACHE.Notify.NoPermission"]
+    ]);
+  });
+
+  it("ignores a linked token's leftover delta flags: only the world actor counts", async () => {
+    const plain = env.addActor();
+    const scene = env.addScene([{ base: plain, linked: true, flags: customBody(9, 9) }]);
+    await resetBodies();
+    expect(env.confirms).toEqual([]);
+    expect(env.notifications.at(-1).msg).toBe("ATTACHE.Notify.NoCustomBodies");
+    expect([...scene.tokens.values()][0].delta.flags[M].body).toEqual({ cols: 9, rows: 9 });
+  });
+
+  it("skips a token whose base actor is gone", async () => {
+    env.addScene([{ base: null, noActor: true, flags: customBody(9, 9) }]);
+    await resetBodies();
+    expect(env.confirms).toEqual([]);
+    expect(env.notifications.at(-1).msg).toBe("ATTACHE.Notify.NoCustomBodies");
+    expect(svc.actorsWithCustomBody().tokens).toEqual([]);
   });
 
   it("the menu application renders no window: it runs the reset", async () => {
     await new ResetBodies().render(true);
     expect(env.notifications.at(-1).msg).toBe("ATTACHE.Notify.NoCustomBodies");
+  });
+});
+
+describe("updateActor and the unlinked tokens that depend on the actor", () => {
+  it("refreshes the windows of the actor and of its unlinked tokens, not of linked ones", () => {
+    const refresh = vi.spyOn(AttacheCaseApp, "refreshFor").mockImplementation(() => {});
+    const base = env.addActor({ flags: customBody() });
+    const scene = env.addScene([{ base }, { base }, { base, linked: true }]);
+    const [t1, t2] = [...scene.tokens.values()].map((t) => t.actor);
+    hook("updateActor")(base, { flags: customBody(3, 3) });
+    expect(refresh.mock.calls.map(([a]) => a)).toEqual([base, t1, t2]);
+    refresh.mockRestore();
+  });
+
+  it("an update of a token's own actor refreshes only that window", () => {
+    const refresh = vi.spyOn(AttacheCaseApp, "refreshFor").mockImplementation(() => {});
+    const base = env.addActor();
+    const scene = env.addScene([{ base }, { base }]);
+    const [t1] = [...scene.tokens.values()].map((t) => t.actor);
+    hook("updateActor")(t1, { flags: customBody(3, 3) });
+    expect(refresh.mock.calls.map(([a]) => a)).toEqual([t1]);
+    refresh.mockRestore();
+  });
+
+  it("an update nothing shows refreshes nothing", () => {
+    const refresh = vi.spyOn(AttacheCaseApp, "refreshFor").mockImplementation(() => {});
+    const base = env.addActor();
+    env.addScene([{ base }]);
+    hook("updateActor")(base, { system: { hp: 1 } });
+    expect(refresh).not.toHaveBeenCalled();
+    refresh.mockRestore();
   });
 });
 

@@ -6,8 +6,8 @@
  * contradicts the notes, a "CONTRADICTS" comment says so. Later milestones turn useful checks into specs.
  *
  * Worlds: S2 and S5 run in attache-dnd5e-plutonium (skipped without the local copy), S3, S4, S6 and S7
- * in the clean attache-dnd5e. S1 needs a real module's init, and until module.json declares dnd5e the server
- * does not send ours, so it borrows Plutonium's script, in the Plutonium world.
+ * in the clean attache-dnd5e. S1 needs a module's init that it can prepend code to, so it borrows Plutonium's
+ * script, in the Plutonium world (it ran that way in M0, when the server did not yet send ours to dnd5e).
  * Everything created is flagged `world.attacheSpike` and deleted again.
  */
 

@@ -53,6 +53,8 @@ export async function resetWorld(page) {
     for (const key of ["defaultBodyCols", "defaultBodyRows"]) {
       await game.settings.set("attache-case", key, game.settings.settings.get(`attache-case.${key}`).default);
     }
+    // The second player some specs create, after the actors that name it as owner.
+    await game.users.getName("Player2")?.delete();
   }, QA_FLAG);
 }
 

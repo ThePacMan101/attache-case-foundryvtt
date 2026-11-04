@@ -19,14 +19,8 @@ MODULES=(plutonium lib-wrapper)
 
 log() { printf '[plutonium] %s\n' "$*"; }
 
-# Resolve symlinks first, so a link into the owner's install cannot slip past the check.
+dev/guard-mnt-c.sh "$DEST"
 dest_real=$(realpath -m -- "$DEST")
-case "${dest_real,,}/" in
-  /mnt/c/*)
-    log "REFUSED: destination $dest_real is under /mnt/c; nothing was written." >&2
-    exit 3
-    ;;
-esac
 
 if [ ! -d "$SRC" ]; then
   log "source $SRC is absent: skipping (Plutonium specs will skip)."

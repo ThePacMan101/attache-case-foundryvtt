@@ -12,6 +12,9 @@
 set -o errexit -o nounset -o pipefail
 cd "$(dirname "$0")/.."
 
+# Before anything can write through these (mkdir, chown as root, the Foundry bind mounts).
+dev/guard-mnt-c.sh dev/data dev/cache
+
 PACKS_ONLY=false
 [ "${1:-}" = "--packs-only" ] && PACKS_ONLY=true
 

@@ -10,6 +10,7 @@ if [ "${1:-}" = "node" ] || [ "${1:-}" = "npx" ] || [ "${1:-}" = "bash" ]; then
 else
   cmd=(npx playwright test "$@")
 fi
+./guard-mnt-c.sh data cache
 mkdir -p artifacts
 # Idempotent: make sure the server container is running.
 docker compose -f docker-compose.yml up -d foundry >/dev/null 2>&1

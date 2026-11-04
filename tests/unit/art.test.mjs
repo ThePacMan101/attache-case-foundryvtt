@@ -4,13 +4,17 @@ import { installFoundry } from "./helpers/fake-foundry.mjs";
 
 const env = installFoundry({ system: "CoC7" });
 const { sanitizeArt, resolveArt, bindArtFallback, DEFAULT_ICON } = await import("../../scripts/core/art.mjs");
-const { displayImg, canEditArt } = await import("../../scripts/foundry/system-adapter.mjs");
+const { displayImg, canEditArt, cleanArt, imageExtensions } = await import("../../scripts/foundry/system-adapter.mjs");
 const svc = await import("../../scripts/foundry/inventory.mjs");
 const { registerHooks } = await import("../../scripts/foundry/hooks.mjs");
 const { registerQueries } = await import("../../scripts/foundry/queries.mjs");
 const { AttacheCaseApp } = await import("../../scripts/apps/attache-case-app.mjs");
+const { FakeItem } = await import("./helpers/fake-foundry.mjs");
 
 const M = "attache-case";
+const IMAGES = ["png", "webp", "svg", "jpg"];
+const sanitize = (v) => sanitizeArt(v, IMAGES);
+const resolve = (source, options = {}) => resolveArt(source, { extensions: IMAGES, ...options });
 const ICON = "icons/weapons/swords/sword-guard-purple.webp";
 const OTHER = "icons/svg/sword.svg";
 const flags = (f) => ({ [M]: f });
@@ -37,50 +41,84 @@ describe("sanitizeArt", () => {
     ["modules/x/My Sword (1).png", "modules/x/My Sword (1).png"],
     ["https://cdn.example.test/a/b.webp?v=2", "https://cdn.example.test/a/b.webp?v=2"],
     ["http://example.test/b.png", "http://example.test/b.png"],
-    ["  icons/svg/sword.svg \n", "icons/svg/sword.svg"]
+    ["  icons/svg/sword.svg \n", "icons/svg/sword.svg"],
+    ["icons/A.PNG", "icons/A.PNG"],
+    ["icons/a.png#frag", "icons/a.png#frag"],
+    ["https://cdn.example.test/a.png?w=1&h=2", "https://cdn.example.test/a.png?w=1&h=2"],
+    ["//cdn.example.test/x.webp", "//cdn.example.test/x.webp"]
   ])("accepts %j", (input, output) => {
-    expect(sanitizeArt(input)).toBe(output);
+    expect(sanitize(input)).toBe(output);
   });
 
   it.each([
     [""], ["   "], ["\n\t"], [null], [undefined], [0], [42], [true], [{}], [[ICON]],
     ["javascript:alert(1)"], ["JavaScript:alert(1)"], ["  javascript:alert(1)"], ["java\tscript:alert(1)"], ["java\nscript:alert(1)"],
     ["vbscript:msgbox(1)"], ["data:image/svg+xml,<svg onload=alert(1)>"], ["data:text/html,x"], ["file:///etc/passwd"], ["blob:http://x/y"],
-    ['"><img src=x onerror=alert(1)>'], ["<script>alert(1)</script>"], ["icons/a\"b.png"], ["icons/a<b.png"], ["icons/a>b.png"], ["icons/a\u0000b.png"]
+    ['"><img src=x onerror=alert(1)>'], ["<script>alert(1)</script>"], ["icons/a\"b.png"], ["icons/a<b.png"], ["icons/a>b.png"], ["icons/a\u0000b.png"],
+    // No image extension on the path: core would refuse these for `img`.
+    ["api/status"], ["api/status?x=a.png"], ["/api/status#a.png"], ["http://evil.test/track"], ["https://evil.test/a?f=.png"],
+    ["http://evil.test.png"], ["//evil.test.png"], ["https:evil.png"], ["icons/a.exe"], ["icons/a.png/b"], ["icons/a.png\\b"], ["icons/"], ["."], ["png"]
   ])("rejects %j", (input) => {
-    expect(sanitizeArt(input)).toBeNull();
+    expect(sanitize(input)).toBeNull();
+  });
+});
+
+describe("sanitizeArt without a list of extensions", () => {
+  it("refuses everything", () => {
+    expect(sanitizeArt(ICON)).toBeNull();
+    expect(sanitizeArt(ICON, [])).toBeNull();
+  });
+});
+
+describe("the image extensions come from core", () => {
+  it("are read from CONST.IMAGE_FILE_EXTENSIONS", () => {
+    expect(imageExtensions()).toContain("webp");
+    expect(imageExtensions()).not.toContain("webm");
+    const saved = CONST.IMAGE_FILE_EXTENSIONS;
+    CONST.IMAGE_FILE_EXTENSIONS = { tga: "image/x-tga" };
+    expect(cleanArt("icons/a.tga")).toBe("icons/a.tga");
+    expect(cleanArt("icons/a.png")).toBeNull();
+    CONST.IMAGE_FILE_EXTENSIONS = saved;
+  });
+
+  it("displayImg ignores a flag with no image extension, and setItemArt refuses it", async () => {
+    expect(displayImg({ img: ICON, flags: flags({ art: "api/status" }) }).src).toBe(ICON);
+    const actor = env.addActor({ items: [weapon()] });
+    expect(await svc.setItemArt(actor.items.get("w"), "api/status")).toBe(false);
+    expect(actor.log).toEqual([]);
+    expect(env.notifications.at(-1).msg).toBe("ATTACHE.Notify.InvalidArt");
   });
 });
 
 describe("resolveArt", () => {
   it("is the normal image when there is no art, as today", () => {
-    expect(resolveArt({ img: ICON })).toEqual({ src: ICON, fallback: DEFAULT_ICON });
-    expect(resolveArt({ art: undefined, img: ICON }).src).toBe(ICON);
+    expect(resolve({ img: ICON })).toEqual({ src: ICON, fallback: DEFAULT_ICON });
+    expect(resolve({ art: undefined, img: ICON }).src).toBe(ICON);
   });
 
   it("prefers a valid art and falls back to the normal image", () => {
-    expect(resolveArt({ art: OTHER, img: ICON })).toEqual({ src: OTHER, fallback: ICON });
+    expect(resolve({ art: OTHER, img: ICON })).toEqual({ src: OTHER, fallback: ICON });
   });
 
   it("ignores an art that does not pass validation (hand-edited flag)", () => {
     for (const art of ["", "javascript:alert(1)", '"><img src=x onerror=alert(1)>', 7, {}]) {
-      expect(resolveArt({ art, img: ICON }).src).toBe(ICON);
+      expect(resolve({ art, img: ICON }).src).toBe(ICON);
     }
   });
 
   it("ignores the art when concealed", () => {
-    expect(resolveArt({ art: OTHER, img: ICON }, { conceal: true })).toEqual({ src: ICON, fallback: DEFAULT_ICON });
+    expect(resolve({ art: OTHER, img: ICON }, { conceal: true })).toEqual({ src: ICON, fallback: DEFAULT_ICON });
   });
 
   it("uses the default icon when the item has no image at all", () => {
     for (const img of ["", null, undefined]) {
-      expect(resolveArt({ img })).toEqual({ src: DEFAULT_ICON, fallback: "" });
-      expect(resolveArt({ art: OTHER, img })).toEqual({ src: OTHER, fallback: DEFAULT_ICON });
+      expect(resolve({ img })).toEqual({ src: DEFAULT_ICON, fallback: "" });
+      expect(resolve({ art: OTHER, img })).toEqual({ src: OTHER, fallback: DEFAULT_ICON });
     }
   });
 
   it("does not ask for the default icon twice", () => {
-    expect(resolveArt({ img: DEFAULT_ICON })).toEqual({ src: DEFAULT_ICON, fallback: "" });
+    expect(resolve({ img: DEFAULT_ICON })).toEqual({ src: DEFAULT_ICON, fallback: "" });
   });
 });
 
@@ -118,7 +156,7 @@ describe("bindArtFallback", () => {
 
   it("walks art -> item image -> default icon, then stops", () => {
     const { makeImg, fail } = fixture();
-    const { src, fallback } = resolveArt({ art: OTHER, img: ICON });
+    const { src, fallback } = resolve({ art: OTHER, img: ICON });
     const img = makeImg(src, fallback);
     fail(img);
     expect(img.src).toBe(ICON);
@@ -131,7 +169,7 @@ describe("bindArtFallback", () => {
 
   it("walks item image -> default icon when there is no art", () => {
     const { makeImg, fail } = fixture();
-    const { src, fallback } = resolveArt({ img: ICON });
+    const { src, fallback } = resolve({ img: ICON });
     const img = makeImg(src, fallback);
     fail(img);
     fail(img);
@@ -140,7 +178,7 @@ describe("bindArtFallback", () => {
 
   it("does not loop on a missing default icon", () => {
     const { makeImg, fail } = fixture();
-    const { src, fallback } = resolveArt({ img: DEFAULT_ICON });
+    const { src, fallback } = resolve({ img: DEFAULT_ICON });
     const img = makeImg(src, fallback);
     fail(img);
     expect(img.srcs).toEqual([DEFAULT_ICON]);
@@ -197,6 +235,14 @@ describe("canEditArt", () => {
     expect(canEditArt(mine)).toBe(true);
     expect(canEditArt(theirs)).toBe(false);
     expect(canEditArt(null)).toBe(false);
+  });
+
+  it("is off for an item in a locked compendium, on in an unlocked one", () => {
+    const item = env.addActor({ items: [weapon()] }).items.get("w");
+    item.compendium = { locked: true };
+    expect(canEditArt(item)).toBe(false);
+    item.compendium = { locked: false };
+    expect(canEditArt(item)).toBe(true);
   });
 
   it("does not depend on the size setting", () => {
@@ -287,11 +333,84 @@ describe("art stays with the item", () => {
     expect([...b.items.values()][0].getFlag(M, "art")).toBe(OTHER);
   });
 
-  it("through a drop copy", async () => {
+  it("through a drop copy of another actor's item", async () => {
     const source = env.addActor({ items: [weapon({ art: OTHER })] });
     const target = env.addActor({ name: "T" });
     const created = await svc.addFromDrop(target, { type: "Item", uuid: source.items.get("w").uuid }, { kind: "auto" });
     expect(created.getFlag(M, "art")).toBe(OTHER);
+  });
+
+  it("through the compendium branch of a drop (core's fromCompendium is faked here; art.spec has the real one)", async () => {
+    const packed = new FakeItem(weapon({ art: OTHER }));
+    packed.pack = "world.qa";
+    const fromCompendium = vi.spyOn(game.items, "fromCompendium");
+    const fromDropData = vi.spyOn(Item.implementation, "fromDropData").mockResolvedValue(packed);
+    const target = env.addActor({ name: "T" });
+    const created = await svc.addFromDrop(target, { type: "Item", uuid: "Compendium.world.qa.Item.w" }, { kind: "auto" });
+    expect(fromCompendium).toHaveBeenCalledTimes(1);
+    expect(created.getFlag(M, "art")).toBe(OTHER);
+    fromCompendium.mockRestore();
+    fromDropData.mockRestore();
+  });
+});
+
+describe("dialogs of an item that is gone", () => {
+  const openDialogs = (item) => ["attache-art-", "attache-size-"].map((prefix) => {
+    const dialog = { close: vi.fn() };
+    foundry.applications.instances.set(`${prefix}${item.uuid.replaceAll(".", "-")}`, dialog);
+    return dialog;
+  });
+  const closedOnce = (dialogs) => {
+    for (const d of dialogs) expect(d.close).toHaveBeenCalledTimes(1);
+  };
+
+  beforeEach(() => foundry.applications.instances.clear());
+
+  it("delete closes the image and the size dialog of that item only", async () => {
+    const actor = env.addActor({ items: [weapon(), { ...weapon(), _id: "x" }] });
+    const dialogs = openDialogs(actor.items.get("w"));
+    const others = openDialogs(actor.items.get("x"));
+    await actor.deleteEmbeddedDocuments("Item", ["w"]);
+    closedOnce(dialogs);
+    for (const d of others) expect(d.close).not.toHaveBeenCalled();
+  });
+
+  it("a delete by another user closes them too", () => {
+    const actor = env.addActor({ items: [weapon()] });
+    const item = actor.items.get("w");
+    const dialogs = openDialogs(item);
+    hook("deleteItem")(item, {}, "someone-else");
+    closedOnce(dialogs);
+  });
+
+  it("a give deletes the source, so it closes them", async () => {
+    const a = env.addActor({ items: [weapon()] });
+    const b = env.addActor({ name: "B" });
+    const dialogs = openDialogs(a.items.get("w"));
+    expect(await svc.transferItem(a.items.get("w"), b)).toBe(true);
+    closedOnce(dialogs);
+  });
+
+  it("a GM-relayed give closes them", async () => {
+    const a = env.addActor({ items: [weapon()] });
+    const b = env.addActor({ name: "Friend", owner: false, playerOwner: true });
+    const dialogs = openDialogs(a.items.get("w"));
+    expect(await svc.transferItem(a.items.get("w"), b)).toBe(true);
+    closedOnce(dialogs);
+  });
+
+  it("a world item with no actor closes them", () => {
+    const item = new FakeItem(weapon());
+    const dialogs = openDialogs(item);
+    hook("deleteItem")(item, {}, game.user.id);
+    closedOnce(dialogs);
+  });
+
+  it("deleting the actor closes the dialogs of its items", () => {
+    const actor = env.addActor({ items: [weapon()] });
+    const dialogs = openDialogs(actor.items.get("w"));
+    hook("deleteActor")(actor);
+    closedOnce(dialogs);
   });
 });
 

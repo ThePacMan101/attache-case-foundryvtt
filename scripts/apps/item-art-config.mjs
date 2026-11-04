@@ -4,8 +4,8 @@
  */
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
-import { bindArtFallback, resolveArt, sanitizeArt } from "../core/art.mjs";
-import { canEditArt, moduleFlags } from "../foundry/system-adapter.mjs";
+import { bindArtFallback, resolveArt } from "../core/art.mjs";
+import { canEditArt, cleanArt, imageExtensions, moduleFlags } from "../foundry/system-adapter.mjs";
 import { setItemArt } from "../foundry/inventory.mjs";
 import { loc, notify } from "../foundry/util.mjs";
 
@@ -66,11 +66,11 @@ export class ItemArtConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    const path = sanitizeArt(moduleFlags(this.item)[FLAGS.ART]) ?? "";
+    const path = cleanArt(moduleFlags(this.item)[FLAGS.ART]) ?? "";
     return Object.assign(context, {
       rootId: this.id,
       path,
-      preview: resolveArt({ art: path, img: this.item.img }),
+      preview: resolveArt({ art: path, img: this.item.img }, { extensions: imageExtensions() }),
       buttons: [{ type: "submit", icon: "fa-solid fa-floppy-disk", label: "ATTACHE.Config.Save" }]
     });
   }
@@ -79,15 +79,14 @@ export class ItemArtConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
     bindArtFallback(this.element);
-    const onEdit = () => this.#refreshPreview();
-    this.element.addEventListener("input", onEdit);
-    this.element.addEventListener("change", onEdit);
+    // Not on `input`: every half-typed address would go out as a request.
+    this.element.addEventListener("change", () => this.#refreshPreview());
   }
 
   /** Show what Save would give, or the item's own image for something that would be refused. */
   #refreshPreview() {
     const img = this.element.querySelector(".attache-art-preview img");
-    const { src, fallback } = resolveArt({ art: this.element.elements.art?.value, img: this.item.img });
+    const { src, fallback } = resolveArt({ art: this.element.elements.art?.value, img: this.item.img }, { extensions: imageExtensions() });
     if (img.getAttribute("src") === src) return;
     img.dataset.fallback = fallback;
     img.src = src;

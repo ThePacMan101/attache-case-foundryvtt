@@ -85,7 +85,7 @@
       "ResetBodies": {
         "Name": "Redefinir Tamanhos Personalizados",
         "Label": "Voltar ao Padrão",
-        "Hint": "Coloca todos os atores e tokens não vinculados de volta na grade padrão."
+        "Hint": "Coloca todos os atores do mundo e tokens não vinculados das cenas de volta na grade padrão. Atores de compêndios não mudam."
       },
       "AutoPlace": {
         "Name": "Posicionar Itens Novos",

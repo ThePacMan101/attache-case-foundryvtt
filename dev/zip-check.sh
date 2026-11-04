@@ -6,6 +6,7 @@
 # Usage: dev/zip-check.sh
 set -o errexit -o nounset -o pipefail
 cd "$(dirname "$0")/.."
+dev/guard-mnt-c.sh dev/data dev/data-zip dev/cache
 
 BASE=(docker compose -f dev/docker-compose.yml)
 ZIP=(docker compose -f dev/docker-compose.yml -f dev/docker-compose.zip.yml)
