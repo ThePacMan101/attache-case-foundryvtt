@@ -7,7 +7,7 @@
 import { MODULE_ID, BODY_ID } from "../constants.mjs";
 import { bindArtFallback } from "../core/art.mjs";
 import * as service from "../foundry/inventory.mjs";
-import { canEditArt, displayImg, displayName, itemQuantity, quantityLabel, isSupportedActor, isSupportedSystem, isArmor } from "../foundry/system-adapter.mjs";
+import { canEditArt, displayImg, displayName, itemQuantity, quantityLabel, isSupportedActor, isSupportedSystem, isWearable, wearsOn } from "../foundry/system-adapter.mjs";
 import { cellSize, showNames, wornEnabled, canEditSizes } from "../settings.mjs";
 import { loc, notify, typeLabel } from "../foundry/util.mjs";
 import { DragController, screenScale } from "./drag-controller.mjs";
@@ -59,7 +59,7 @@ function fitSize(state) {
   height += rowH + 2 * gap;
   // Side column: Worn and Unstowed zones (header + one 39 px row per chip, or the empty hint).
   const zone = (n) => 40 + Math.max(1, n) * 39;
-  const sideH = (wornEnabled() ? zone(state.worn.length) + gap : 0) + zone(state.overflow.length) + 2 * gap;
+  const sideH = (wornEnabled() && wearsOn(state.actor) ? zone(state.worn.length) + gap : 0) + zone(state.overflow.length) + 2 * gap;
   return {
     width: Math.min(maxW, Math.max(560, main + side + chrome)),
     height: Math.min(maxH, Math.max(320, Math.max(height, sideH) + 86))
@@ -123,6 +123,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
       notify("warn", "ATTACHE.Notify.NoPermission");
       return null;
     }
+    service.reconcile(actor).catch((err) => console.error(`${MODULE_ID} | reconcile failed`, err));
     let app = AttacheCaseApp.#instances.get(actor.uuid);
     if (app) {
       // A forced render also maximizes the window and brings it to the front.
@@ -287,7 +288,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
       cell: this.cellSize,
       capacity: { ...cap, label: loc("ATTACHE.Window.Capacity", { used: cap.used, total: cap.total, pct: cap.pct }) },
       panels,
-      worn: { enabled: wornEnabled(), items: state.worn.map((i) => chip(i, "worn")) },
+      worn: { enabled: wornEnabled() && wearsOn(this.actor), items: state.worn.map((i) => chip(i, "worn")) },
       overflow: { items: state.overflow.map((i) => chip(i, "overflow")), count: state.overflow.length },
       excluded: { show: isGM && state.excluded.length > 0, open: this._excludedOpen, items: state.excluded.map((i) => chip(i, "excluded")) }
     });
@@ -592,7 +593,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
       },
       {
         label: "ATTACHE.Menu.Wear", icon: "fa-solid fa-shirt",
-        visible: (li) => editable() && wornEnabled() && !worn(li) && li.dataset.kind !== "excluded" && isArmor(item(li)),
+        visible: (li) => editable() && wornEnabled() && !worn(li) && li.dataset.kind !== "excluded" && isWearable(item(li)),
         onClick: (_e, li) => service.wearItem(this.actor, li.dataset.itemId)
       },
       {
@@ -712,7 +713,7 @@ export class AttacheCaseApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @this {AttacheCaseApp} */
   static async #onPackUnstowed() {
     if (!this.isEditable) return;
-    const { remaining } = await service.packUnstowed(this.actor);
+    const { remaining } = await service.packUnstowed(this.actor, { userAction: true });
     if (remaining) notify("info", "ATTACHE.Notify.DidNotFitMany", { count: remaining });
   }
 

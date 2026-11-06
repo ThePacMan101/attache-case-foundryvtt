@@ -1,7 +1,7 @@
 # Attaché Case
 
-A briefcase-style grid inventory for **Foundry VTT v14**, for **Call of Cthulhu 7th Edition** and
-**Delta Green**. Every item takes a number of cells. Players fit their gear into a grid, drag it around
+A briefcase-style grid inventory for **Foundry VTT v14**, for **Call of Cthulhu 7th Edition**,
+**Delta Green** and **D&D 5e**. Every item takes a number of cells. Players fit their gear into a grid, drag it around
 and rotate it to make room. The GM decides how big each item and each bag is.
 
 ![Attaché Case window, dark theme](docs/screenshot-dark.png)
@@ -156,7 +156,11 @@ and items.
 ## Compatibility
 
 - Foundry VTT v14 (14.359 or later; tested on 14.369).
-- Call of Cthulhu 7th Edition (`CoC7`, tested with 8.16) and Delta Green (`deltagreen`, tested with 2.0.1).
+- Call of Cthulhu 7th Edition (`CoC7`, tested with 8.16), Delta Green (`deltagreen`, tested with 2.0.1) and
+  D&D 5e (`dnd5e`, tested with 5.3.3; items imported by Plutonium are recognised).
+- In dnd5e the case follows the system's own containers and equipped state: a bag on the sheet is a grid
+  in the case, and worn armor, shields and clothing are equipped.
+- **Alternative images:** right-click an item and choose Change Image to show another picture on its tile.
   In other systems the module does nothing.
 
 ## Development

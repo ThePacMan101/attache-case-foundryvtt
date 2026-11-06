@@ -89,6 +89,8 @@ export async function makeActor(page, spec) {
       const ours = {};
       if (it.w) ours.size = { w: it.w, h: it.h };
       if (it.pos) ours.pos = { c: it.pos.c === "body" ? "body" : ids[it.pos.c], x: it.pos.x, y: it.pos.y, r: Boolean(it.pos.r) };
+      // dnd5e places items with no pos on opening the case (`reconcile`); `null` keeps a fixture's item in Unstowed.
+      else if (game.system.id === "dnd5e" && !it.worn) ours.pos = null;
       if (it.worn) ours.worn = true;
       if (it.excluded !== undefined) ours.excluded = it.excluded;
       return { name: it.name, type: types[it.kind ?? "gear"], img: it.img ?? "icons/svg/item-bag.svg", flags: { "attache-case": ours } };

@@ -56,6 +56,12 @@
         <input id="{{rootId}}-rows" type="number" name="rows" value="{{rows}}" min="1" max="{{max}}" step="1">
       </div>
     </div>
+    {{#if autoLabel}}
+    <p class="hint attache-container-auto">{{autoLabel}}</p>
+    <button type="button" class="attache-reset" data-action="resetContainer">
+      <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> {{localize "ATTACHE.Config.Reset"}}
+    </button>
+    {{/if}}
   </fieldset>
   {{/if}}
 </div>

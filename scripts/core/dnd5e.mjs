@@ -111,6 +111,12 @@ function identifierName(item) {
 /** Every normalized name an item goes by. */
 const allNames = (item) => [realName(item), plutoniumItemName(item), identifierName(item)].filter(Boolean).map(normalizeName);
 
+/** What the data says the item is; the name only when it says nothing, so that renaming one changes nothing. */
+function identity(item) {
+  const names = [plutoniumItemName(item), identifierName(item)].filter(Boolean);
+  return (names.length ? names : [realName(item)].filter(Boolean)).map(normalizeName);
+}
+
 /**
  * Whether an item's own data says it is not an object anyone carries.
  * A natural attack can sit on any actor, a monster's real weapon keeps `page:"monsterAction"` and has a
@@ -175,7 +181,12 @@ const BAG_NAMES = Object.freeze({
   saddlebags: { cols: 8, rows: 5 },
   chest: { cols: 12, rows: 8 },
   barrel: { cols: 8, rows: 8 },
-  "bag of holding": { cols: 12, rows: 8 }
+  "bag of holding": { cols: 12, rows: 8 },
+  // The same bag in both rule sets, one with 120 lb and one with no capacity; its pouches fit inside it.
+  "handy haversack": { cols: 8, rows: 6 },
+  "left pouch": { cols: 4, rows: 3 },
+  "right pouch": { cols: 4, rows: 3 },
+  "central pouch": { cols: 6, rows: 4 }
 });
 
 /** Grid by capacity; the 30 lb "Packs" have to reach Backpack size for their contents to fit. */
@@ -212,25 +223,45 @@ function capacityPounds(item) {
  * @returns {boolean}
  */
 export function isVessel(item) {
-  return allNames(item).some((n) => VESSELS.test(n));
+  return identity(item).some((n) => VESSELS.test(n));
 }
 
 /** The module's `container` flag: dims, `false` for "not a bag", or undefined. */
 const containerFlag = (item) => item?.flags?.[MODULE_ID]?.[FLAGS.CONTAINER];
 
+/** Whether a native container's own data makes it a bag. Vessels win unless the capacity is real. */
+function isAutoBag(item) {
+  if (item?.type !== "container" && item?.type !== "backpack") return false;
+  const { pounds, cubicFeet } = capacityPounds(item);
+  if (isVessel(item)) return pounds >= REAL_CAPACITY_LB || cubicFeet >= 1;
+  return hasProperty(item, "weightlessContents") || pounds >= MIN_BAG_LB || cubicFeet >= 1;
+}
+
 /**
- * Whether an item gets a grid (D-004, PLAN A7). Vessels win unless the capacity is real.
+ * Whether an item gets a grid (D-004, PLAN A7).
  * @param {Item|object} item
  * @returns {boolean}
  */
 export function isBag(item) {
   const flag = containerFlag(item);
   if (flag === false) return false;
-  if (sanitizeContainer(flag)) return true;
-  if (item?.type !== "container" && item?.type !== "backpack") return false;
-  const { pounds, cubicFeet } = capacityPounds(item);
-  if (isVessel(item)) return pounds >= REAL_CAPACITY_LB || cubicFeet >= 1;
-  return hasProperty(item, "weightlessContents") || pounds >= MIN_BAG_LB || cubicFeet >= 1;
+  return Boolean(sanitizeContainer(flag)) || isAutoBag(item);
+}
+
+/**
+ * The grid a native container's own data gives it, whatever the module's flag says: exact name, else capacity.
+ * @param {Item|object} item
+ * @returns {{cols:number, rows:number}|null} null when its data does not make it a bag
+ */
+export function autoBagDims(item) {
+  if (!isAutoBag(item)) return null;
+  for (const name of identity(item)) {
+    if (Object.hasOwn(BAG_NAMES, name)) return { ...BAG_NAMES[name] };
+  }
+  const { total } = capacityPounds(item);
+  if (!total) return { ...WEIGHTLESS_BAG };
+  const { cols, rows } = BAG_BANDS.find((band) => total <= band.max);
+  return { cols: Math.min(cols, MAX_DIM), rows: Math.min(rows, MAX_DIM) };
 }
 
 /**
@@ -239,14 +270,53 @@ export function isBag(item) {
  * @returns {{cols:number, rows:number}|null} null when it is not a bag
  */
 export function bagDims(item) {
-  if (!isBag(item)) return null;
-  const flag = sanitizeContainer(containerFlag(item));
-  if (flag) return flag;
-  for (const name of allNames(item)) {
-    if (Object.hasOwn(BAG_NAMES, name)) return { ...BAG_NAMES[name] };
+  const flag = containerFlag(item);
+  if (flag === false) return null;
+  return sanitizeContainer(flag) ?? autoBagDims(item);
+}
+
+/** The equipment types worn on the body. `CONFIG.DND5E.armorTypes`, plus `clothing` from `miscEquipmentTypes`. */
+const WORN_TYPES = new Set([...ARMOR_TYPES, "clothing"]);
+
+/** Plutonium has no `clothing`: clothes arrive as `trinket`, so only their name says what they are. */
+const CLOTHES = /(?:^|[^a-z0-9])(?:clothes|clothing|robes?|costumes?|vestments?|roupas?|trajes?|vestes?|tunicas?)(?:$|[^a-z0-9])/;
+
+/** dnd5e's 2014 `clothing` also holds what a horse wears. */
+const TACK = /(?:^|[^a-z0-9])(?:saddles?|bridles?|barding|harness|selas?|arreios?)(?:$|[^a-z0-9])/;
+
+/**
+ * Whether an item goes in the Worn strip when equipped (D-005). Plutonium marks Tinderbox, Rope and every weapon
+ * as equipped, so `equipped` alone cannot say it.
+ * @param {Item|object} item
+ * @returns {boolean}
+ */
+export function isWearable(item) {
+  if (item?.type !== "equipment") return false;
+  const names = identity(item);
+  if (names.some((n) => TACK.test(n))) return false;
+  return WORN_TYPES.has(item.system?.type?.value) || names.some((n) => CLOTHES.test(n));
+}
+
+/**
+ * Make item data ready to be created on another actor: what says it is being carried stays behind. Mutates and
+ * returns `data`. The first entry loses `equipped`, so that dnd5e chooses by the receiver, as on a sheet drop (d:57594).
+ * Anything inside it keeps `false` where it had the key: dnd5e resets only the first entry, and an absent key on an npc
+ * means equipped (d:13929), so armor in a bag would raise that npc's AC.
+ * @param {object} data
+ * @param {object} [options]
+ * @param {boolean} [options.give=false] a give, not a drop: Plutonium's drop prompt must not cancel the create (D-006)
+ * @param {boolean} [options.root=true] the item itself, not something inside it
+ * @returns {object}
+ */
+export function cleanCopy(data, { give = false, root = true } = {}) {
+  const { system } = data;
+  if (system) {
+    delete system.attuned;
+    if (system.crew) delete system.crew.value;
+    if (root) delete system.equipped;
+    else if ("equipped" in system) system.equipped = false;
   }
-  const { total } = capacityPounds(item);
-  if (!total) return { ...WEIGHTLESS_BAG };
-  const { cols, rows } = BAG_BANDS.find((band) => total <= band.max);
-  return { cols: Math.min(cols, MAX_DIM), rows: Math.min(rows, MAX_DIM) };
+  const plutonium = data.flags?.plutonium;
+  if (give && plutonium?.propDroppable) plutonium.isStandardDragDrop = true;
+  return data;
 }

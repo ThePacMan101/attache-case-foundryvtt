@@ -64,6 +64,7 @@
       "Reset": "Reset to Default",
       "Exclude": "Takes no space",
       "IsContainer": "Container",
+      "ContainerAuto": "Automatic: {size}",
       "UseDefault": "Use world default ({size})",
       "BodyHint": "0 columns or rows: no grid.",
       "Containers": "Containers",
@@ -135,7 +136,9 @@
       "InvalidArt": "That is not a valid image path.",
       "NoCustomBodies": "No actor has a custom size.",
       "BodiesCleared": "Custom sizes cleared: {count}.",
-      "UnsupportedActor": "This actor type is not supported."
+      "UnsupportedActor": "This actor type is not supported.",
+      "ContainerCycle": "{name} cannot go inside something it holds.",
+      "TooDeep": "{name} holds things nested too deep: what lies deepest was not copied."
     },
     "Preset": {
       "BeltPouch": {

@@ -6,10 +6,11 @@
 
 import { MODULE_ID, FLAGS } from "../constants.mjs";
 import { canMove, findSpot, withPlacement } from "../core/layout.mjs";
-import { canEditArt, displayName, isSupportedActor, isSupportedSystem, moduleFlags, profile } from "./system-adapter.mjs";
-import { getState, itemSize, isWorn, packUnstowed } from "./inventory.mjs";
+import { canEditArt, displayName, hasNativeBags, isNativeGrid, isSupportedActor, isWearable, isSupportedSystem, moduleFlags, nativeParent, profile } from "./system-adapter.mjs";
+import { automaticGrids, getState, itemSize, packUnstowed } from "./inventory.mjs";
+import { isUnstowedByUser, isWorn, placementFields } from "./placement.mjs";
 import { autoPlaceEnabled, canEditSizes } from "../settings.mjs";
-import { loc, notify, flagPath } from "./util.mjs";
+import { deletion, loc, notify, flagPath } from "./util.mjs";
 import { AttacheCaseApp } from "../apps/attache-case-app.mjs";
 import { ActorConfig } from "../apps/actor-config.mjs";
 import { ItemSizeConfig } from "../apps/item-size-config.mjs";
@@ -44,13 +45,14 @@ function releaseReservations(actor) {
   reservations.delete(actor.uuid);
 }
 
-/** The actor's current layout plus the pending reservations. */
-function layoutWithReservations(actor) {
-  let { layout } = getState(actor);
+/** The actor's current state, with the pending reservations in its layout. */
+function stateWithReservations(actor) {
+  const state = getState(actor);
+  let { layout } = state;
   for (const r of reservations.get(actor.uuid)?.items ?? []) {
     layout = withPlacement(layout, r.key, r.size, r.pos) ?? layout;
   }
-  return layout;
+  return { ...state, layout };
 }
 
 /** Whether a create operation was issued by us with an explicit placement. */
@@ -62,15 +64,26 @@ function onPreCreateItem(item, _data, options, userId) {
   if (!isSupportedActor(actor) || actor.pack) return;
   const info = itemSize(item);
   if (!info.size || info.container || isWorn(item)) return;
-  const layout = layoutWithReservations(actor);
+  // A8: its bag may come later in this batch (at this point it cannot be told from a dangling id), so such an item
+  // waits for the batch to end. onCreateItem settles it, when every document of the batch exists.
+  const parentId = profile()?.nativeContainer?.(item);
+  if (parentId && !actor.items.has(parentId)) return;
+  const parent = nativeParent(item, actor);
+  if (parent && !isNativeGrid(parent)) return;
+  const state = stateWithReservations(actor);
+  const grids = parent ? [parent.id] : automaticGrids(state);
   const pos = moduleFlags(item)[FLAGS.POS];
-  if (pos && canMove(layout, "\u0000new", info.size, pos)) {
+  if (pos && grids.includes(pos.c) && canMove(state.layout, "\u0000new", info.size, pos)) {
     reserve(actor, info.size, pos);
     return;
   }
-  const spot = findSpot(layout, null, info.size);
-  // A pos copied from another actor means nothing here: drop it so it cannot "come back" later.
-  if (spot || pos !== undefined) item.updateSource({ [flagPath(FLAGS.POS)]: spot ?? null });
+  const spot = findSpot(state.layout, grids, info.size);
+  // A pos copied from another actor means nothing here: drop it so it cannot "come back" later. On a native system it
+  // goes altogether, as `null` there says the user chose Unstowed and `reconcile` should try this one again. Only `pos`:
+  // a worn flag copied while Worn is off is to survive until the setting returns.
+  const key = flagPath(FLAGS.POS);
+  const fields = placementFields(item, { pos: spot, stowed: !hasNativeBags() && !spot && pos !== undefined }, { actor });
+  if (key in fields) item.updateSource({ [key]: fields[key] });
   if (spot) reserve(actor, info.size, spot);
 }
 
@@ -90,6 +103,55 @@ function reportUnplaced(actor, item) {
   entry.names.push(displayName(item));
 }
 
+/** Packing waiting for the end of the current batch, per actor. */
+const pendingPacks = new Map();
+
+/** The last pack started, per actor: the next one waits for its write to come back, or it would read stale cells. */
+const runningPacks = new Map();
+
+/**
+ * Automatic packing, debounced per actor (A8). Core fires the `createItem` of one batch in a single synchronous loop,
+ * so the next task sees every document and every bag of it; a Handy Haversack sends one write, not four.
+ * @param {Actor} actor
+ * @param {object} what
+ * @param {string[]} [what.ids] these items, in Unstowed for whatever reason
+ * @param {boolean} [what.all=false] also the other items in Unstowed, except where the user put them
+ * @param {boolean} [what.report=false] tell the user about `ids` still in Unstowed afterwards
+ */
+function schedulePack(actor, { ids = [], all = false, report = false }) {
+  let entry = pendingPacks.get(actor.uuid);
+  if (!entry) pendingPacks.set(actor.uuid, entry = { ids: new Set(), reports: new Set(), all: false, timer: 0 });
+  for (const id of ids) (report ? entry.reports : entry.ids).add(id);
+  entry.all ||= all;
+  clearTimeout(entry.timer);
+  entry.timer = setTimeout(() => {
+    pendingPacks.delete(actor.uuid);
+    const run = (runningPacks.get(actor.uuid) ?? Promise.resolve())
+      .then(() => runPack(actor, entry))
+      .catch((err) => console.error(`${MODULE_ID} |`, err))
+      .finally(() => {
+        if (runningPacks.get(actor.uuid) === run) runningPacks.delete(actor.uuid);
+      });
+    runningPacks.set(actor.uuid, run);
+  }, 0);
+}
+
+/** An actor that is gone needs no packing, and writing to it would only log an error. */
+function cancelPack(actor) {
+  clearTimeout(pendingPacks.get(actor.uuid)?.timer);
+  pendingPacks.delete(actor.uuid);
+}
+
+async function runPack(actor, entry) {
+  const only = getState(actor).overflow
+    .filter((item) => entry.ids.has(item.id) || entry.reports.has(item.id) || (entry.all && !isUnstowedByUser(item)))
+    .map((item) => item.id);
+  if (only.length) await packUnstowed(actor, { only });
+  for (const item of getState(actor).overflow) {
+    if (entry.reports.has(item.id)) reportUnplaced(actor, item);
+  }
+}
+
 function onCreateItem(item, options, userId) {
   const actor = item.parent;
   if (!isSupportedActor(actor)) return;
@@ -98,26 +160,36 @@ function onCreateItem(item, options, userId) {
   releaseReservations(actor);
   if (actor.pack || !autoPlaceEnabled()) return;
   const info = itemSize(item);
-  if (info.container) {
-    packUnstowed(actor).catch((err) => console.error(`${MODULE_ID} |`, err));
-    return;
-  }
-  if (isOwnCreate(options) || !info.size || isWorn(item)) return;
-  const { layout } = getState(actor);
-  if (!layout.placed.has(item.id)) reportUnplaced(actor, item);
+  if (info.container) schedulePack(actor, { all: true });
+  else if (!isOwnCreate(options) && info.size && !isWorn(item)) schedulePack(actor, { ids: [item.id], report: true });
 }
 
-function onUpdateItem(item, changed, _options, userId) {
+/** Whether an update wrote or removed one of our flags. A removal can show as `-=key` in core's `changed`. */
+function touchedFlag(changed, key) {
+  const ours = changed.flags?.[MODULE_ID];
+  return Boolean(ours) && (key in ours || `-=${key}` in ours);
+}
+
+function onUpdateItem(item, changed, options, userId) {
   const actor = item.parent;
   if (!isSupportedActor(actor)) return;
   refresh(actor, item, changed);
   if (userId !== game.user.id || actor.pack || !autoPlaceEnabled()) return;
-  const became = foundry.utils.hasProperty(changed, `flags.${MODULE_ID}.${FLAGS.CONTAINER}`) && itemSize(item).container;
-  if (!became) return;
-  // Items displaced by shrinking this container keep their pos (architecture contract: growing
-  // it back restores them), so only the other unstowed items are packed.
-  const only = getState(actor).overflow.filter((i) => moduleFlags(i)[FLAGS.POS]?.c !== item.id).map((i) => i.id);
-  if (only.length) packUnstowed(actor, { only }).catch((err) => console.error(`${MODULE_ID} |`, err));
+  if (touchedFlag(changed, FLAGS.CONTAINER)) {
+    if (itemSize(item).container) {
+      // Items displaced by shrinking this container keep their pos (architecture contract: growing
+      // it back restores them), so only the other unstowed items are packed.
+      const ids = getState(actor).overflow.filter((i) => moduleFlags(i)[FLAGS.POS]?.c !== item.id && !isUnstowedByUser(i)).map((i) => i.id);
+      if (ids.length) schedulePack(actor, { ids });
+    } else if (hasNativeBags()) {
+      // The GM said this bag is not one: it is a tile now, and needs a place.
+      schedulePack(actor, { ids: [item.id] });
+    }
+  }
+  // D-002: what we wrote ourselves carries the marker. Anything else came from the sheet or a macro.
+  if (!hasNativeBags() || options?.[MODULE_ID]?.synced) return;
+  const takenOff = changed.system?.equipped === false && isWearable(item);
+  if (foundry.utils.hasProperty(changed, "system.container") || takenOff) schedulePack(actor, { ids: [item.id] });
 }
 
 /** The dialogs of an item that no longer exists: saving in one could only fail. */
@@ -126,16 +198,35 @@ function closeItemDialogs(item) {
   for (const prefix of ["attache-art-", "attache-size-"]) foundry.applications.instances.get(`${prefix}${id}`)?.close();
 }
 
-function onDeleteItem(item) {
+function onDeleteItem(item, options, userId) {
   closeItemDialogs(item);
   const actor = item.parent;
-  if (isSupportedActor(actor)) refresh(actor, item);
+  if (!isSupportedActor(actor)) return;
+  refresh(actor, item);
+  // dnd5e leaves the contents of a deleted bag with a dangling id, which counts as loose: they need a place. With
+  // `deleteContents` they are about to go too, and a write would race the delete.
+  if (userId !== game.user.id || options?.deleteContents || !hasNativeBags() || actor.pack || !autoPlaceEnabled()) return;
+  const ids = actor.items.filter((i) => profile().nativeContainer(i) === item.id || moduleFlags(i)[FLAGS.POS]?.c === item.id).map((i) => i.id);
+  if (ids.length) schedulePack(actor, { ids });
 }
 
 function onCreateActor(actor, _options, userId) {
   if (userId !== game.user.id || actor.pack || !isSupportedActor(actor) || !autoPlaceEnabled()) return;
-  if (!actor.items.size) return;
-  packUnstowed(actor).catch((err) => console.error(`${MODULE_ID} |`, err));
+  if (actor.items.size) schedulePack(actor, { all: true });
+}
+
+/**
+ * dnd5e claims an npc's weapon from its compendium source, so our flags would stay behind on any route, the sheet's
+ * too. Where the item sat on the npc does stay behind.
+ */
+function onGetAsGear(item, gear) {
+  const ours = { ...moduleFlags(item) };
+  delete ours[FLAGS.POS];
+  delete ours[FLAGS.WORN];
+  gear.updateSource({ flags: { [MODULE_ID]: ours } });
+  for (const key of [FLAGS.POS, FLAGS.WORN]) {
+    if (moduleFlags(gear)[key] !== undefined) gear.updateSource({ [flagPath(key)]: deletion() });
+  }
 }
 
 /* -------------------------------------------- */
@@ -158,6 +249,11 @@ function refresh(actor, item, changed) {
     if (info.container || configKeys.length) ActorConfig.refreshFor(actor);
   }
   AttacheCaseApp.refreshFor(actor);
+  // An unlinked token shows its base's items, but core fires nothing on the token when they change.
+  if (actor.isToken) return;
+  for (const token of actor.getDependentTokens?.() ?? []) {
+    if (!token.actorLink && token.actor) AttacheCaseApp.refreshFor(token.actor);
+  }
 }
 
 /** Item flags that only record where an item sits. */
@@ -282,7 +378,9 @@ export function registerHooks() {
   Hooks.on("deleteItem", onDeleteItem);
   Hooks.on("createActor", onCreateActor);
   Hooks.on("updateActor", onUpdateActor);
+  Hooks.on("dnd5e.getAsGear", onGetAsGear);
   Hooks.on("deleteActor", (actor) => {
+    cancelPack(actor);
     AttacheCaseApp.get(actor)?.close();
     for (const item of actor.items) closeItemDialogs(item);
   });

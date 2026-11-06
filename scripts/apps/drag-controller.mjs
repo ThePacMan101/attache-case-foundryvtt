@@ -12,7 +12,7 @@
 import { bindArtFallback } from "../core/art.mjs";
 import { footprint } from "../core/grid.mjs";
 import { canMove } from "../core/layout.mjs";
-import { displayImg, isArmor } from "../foundry/system-adapter.mjs";
+import { displayImg, isWearable, wouldCycle } from "../foundry/system-adapter.mjs";
 import { canGiveTo } from "../foundry/inventory.mjs";
 import { wornEnabled } from "../settings.mjs";
 
@@ -294,7 +294,7 @@ export class DragController {
     }
     if (el.closest(".attache-overflow")) return { app, kind: "overflow", valid: foreign || d.kind !== "overflow" };
     if (el.closest(".attache-worn")) {
-      const valid = wornEnabled() && isArmor(d.item) && (foreign || d.kind !== "worn");
+      const valid = wornEnabled() && isWearable(d.item, app.actor) && (foreign || d.kind !== "worn");
       return { app, kind: "worn", valid };
     }
     return { app, kind: "none", valid: false };
@@ -361,7 +361,8 @@ export class DragController {
       } else if (hit.kind === "cell") {
         sourceApp.optimisticMove(item.id, hit.pos, d.size);
         ok = await sourceApp.service.moveItem(sourceApp.actor, item.id, hit.pos);
-        if (!ok) sourceApp.notifyNoSpace(item);
+        // A move refused because the item holds that bag has its own warning.
+        if (!ok && !wouldCycle(sourceApp.actor, item, hit.pos.c)) sourceApp.notifyNoSpace(item);
       } else if (hit.kind === "overflow") {
         if (kind !== "overflow") sourceApp.optimisticHide(item.id);
         await sourceApp.service.stowItem(sourceApp.actor, item.id);

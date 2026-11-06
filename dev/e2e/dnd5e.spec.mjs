@@ -1,8 +1,8 @@
 /**
  * dnd5e basics and sizing (PLAN M3), on the clean `attache-dnd5e` world, GM and Player, real mouse and
  * keyboard: opening, sizes of real compendium items, compendium drops, drag, rotate, gives, sheet entries,
- * refused actor types, the quantity badge and unidentified items. Native bag sync is M4: a bag's contents
- * show as loose tiles here. Fixtures carry `world.attacheQA` and are removed at the start of each run.
+ * refused actor types, the quantity badge and unidentified items. Native bag sync is in dnd5e-sync.spec.mjs.
+ * Fixtures carry `world.attacheQA` and are removed at the start of each run.
  */
 
 import { test, expect } from "@playwright/test";
@@ -123,12 +123,13 @@ test.describe.serial(WORLD, () => {
   test("02 real compendium items get the D-003 sizes on both clients; an unarmed strike takes no space", async () => {
     const { actorId } = await makeActor(gm.page, { name: "QA Sizes", body: { cols: 20, rows: 20 } });
     const ids = await addFromPack(gm.page, actorId, [
-      "Longsword", "Greatsword", "Dagger", "Longbow", "Spear", "Plate Armor", "Shield", "Arrows", "Potion of Healing", "Rope", "Pole", "Ladder", "Shovel", "Spell Scroll, 1st Level", "Backpack"
+      "Longsword", "Greatsword", "Dagger", "Longbow", "Spear", "Plate Armor", "Shield", "Arrows", "Potion of Healing", "Rope", "Pole", "Ladder", "Shovel", "Spell Scroll, 1st Level"
     ]);
+    const bag = await addFromPack(gm.page, actorId, ["Backpack"]);
     const unarmed = await addFromPack(gm.page, actorId, ["Unarmed Strike"]);
     const expected = {
       "Longsword": "6x1", "Greatsword": "8x2", "Dagger": "2x1", "Longbow": "8x2", "Spear": "8x1", "Plate Armor": "4x5", "Shield": "3x3", "Arrows": "2x1",
-      "Potion of Healing": "1x1", "Rope": "2x2", "Pole": "8x1", "Ladder": "8x2", "Shovel": "5x2", "Spell Scroll, 1st Level": "2x1", "Backpack": "4x4"
+      "Potion of Healing": "1x1", "Rope": "2x2", "Pole": "8x1", "Ladder": "8x2", "Shovel": "5x2", "Spell Scroll, 1st Level": "2x1"
     };
     const sizes = async (page) => {
       const { placed } = await layout(page, actorId);
@@ -139,6 +140,9 @@ test.describe.serial(WORLD, () => {
     const l = await layout(gm.page, actorId);
     expect(l.excluded).toContain(unarmed["Unarmed Strike"]);
     expect(l.placed[unarmed["Unarmed Strike"]]).toBeUndefined();
+    // A real bag is a grid now, not a tile: 8x6 by its name, as its compendium entry says.
+    expect(l.placed[bag.Backpack]).toBeUndefined();
+    expect(l.containers.find((c) => c.id === bag.Backpack)).toMatchObject({ cols: 8, rows: 6 });
 
     // Identity on real data: a renamed sword keeps its size.
     const sword = ids.Longsword;

@@ -6,7 +6,7 @@
 import { MODULE_ID, MAX_DIM, FLAGS } from "../constants.mjs";
 import { bindArtFallback } from "../core/art.mjs";
 import { explainSize, sanitizeContainer, sanitizeSize } from "../core/sizes.mjs";
-import { describe, displayImg, displayName, moduleFlags } from "../foundry/system-adapter.mjs";
+import { autoContainerDims, containerDims, describe, displayImg, displayName, moduleFlags } from "../foundry/system-adapter.mjs";
 import { registry, setItemConfig } from "../foundry/inventory.mjs";
 import { canEditSizes } from "../settings.mjs";
 import { loc, notify } from "../foundry/util.mjs";
@@ -38,7 +38,7 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     window: { title: "ATTACHE.Menu.ItemSize", icon: "fa-solid fa-ruler-combined" },
     position: { width: 420, height: "auto" },
     form: { handler: ItemSizeConfig.#onSubmit, closeOnSubmit: true, submitOnChange: false },
-    actions: { resetSize: ItemSizeConfig.#onReset }
+    actions: { resetSize: ItemSizeConfig.#onReset, resetContainer: ItemSizeConfig.#onResetContainer }
   };
 
   static PARTS = {
@@ -96,7 +96,8 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     const def = this.#defaults();
     const custom = sanitizeSize(flags[FLAGS.SIZE]);
     const size = custom ?? def.size ?? { w: 1, h: 1 };
-    const container = sanitizeContainer(flags[FLAGS.CONTAINER]);
+    const container = containerDims(this.item);
+    const auto = autoContainerDims(this.item);
     const source = loc(SOURCE_KEYS[def.source] ?? SOURCE_KEYS.fallback);
     const defaultLabel = def.size
       ? loc("ATTACHE.Config.Default", { size: loc("ATTACHE.Window.Size", { w: def.size.w, h: def.size.h }), source })
@@ -117,8 +118,9 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
       registryExcluded: def.excluded,
       isGM: game.user.isGM,
       isContainer: Boolean(container) || this.focusContainer,
-      cols: container?.cols ?? 6,
-      rows: container?.rows ?? 4,
+      cols: container?.cols ?? auto?.cols ?? 6,
+      rows: container?.rows ?? auto?.rows ?? 4,
+      autoLabel: auto ? loc("ATTACHE.Config.ContainerAuto", { size: loc("ATTACHE.Window.Size", { w: auto.cols, h: auto.rows }) }) : null,
       buttons: [{ type: "submit", icon: "fa-solid fa-floppy-disk", label: "ATTACHE.Config.Save" }]
     });
   }
@@ -182,13 +184,28 @@ export class ItemSizeConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /** @this {ItemSizeConfig} */
+  static #onResetContainer() {
+    const f = this.element.elements;
+    const auto = autoContainerDims(this.item);
+    if (!auto) return;
+    f.isContainer.checked = true;
+    f.cols.value = auto.cols;
+    f.rows.value = auto.rows;
+    this.#refresh();
+  }
+
+  /** @this {ItemSizeConfig} */
   static async #onSubmit(_event, form, formData) {
     const data = formData.object;
     const def = this.#defaults();
     const cfg = {};
     const isContainer = game.user.isGM && Boolean(data.isContainer);
     if (game.user.isGM) {
-      cfg.container = isContainer ? sanitizeContainer({ cols: data.cols, rows: data.rows }) : null;
+      // Three states (A7). A real bag left at its own grid stays automatic; unticked, it is told it is no bag.
+      const auto = autoContainerDims(this.item);
+      const dims = isContainer ? sanitizeContainer({ cols: data.cols, rows: data.rows }) : null;
+      if (isContainer) cfg.container = auto && dims?.cols === auto.cols && dims?.rows === auto.rows ? null : dims;
+      else cfg.container = auto ? false : null;
       if (!isContainer) {
         const excluded = Boolean(data.excluded);
         cfg.excluded = excluded ? (def.excluded ? null : true) : (def.excluded ? false : null);

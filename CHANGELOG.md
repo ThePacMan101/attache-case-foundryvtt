@@ -6,6 +6,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
+Adds D&D 5e (`dnd5e`, tested with 5.3.3) next to CoC7 and Delta Green.
+
+### Added
+- dnd5e support for characters, npcs and vehicles: default sizes for weapons, armor and gear (a magic item
+  takes its base item's size, and renaming an item keeps its size), monster natural attacks take no space,
+  quantity badges, fantasy bag presets and an "Attaché Case: Containers" compendium for dnd5e.
+- Native dnd5e containers: moving an item into a bag in the case puts it in that bag on the sheet, and the
+  reverse. Equipping armor, shields or clothing puts them in the Worn strip, and wearing them equips them.
+- Items imported by Plutonium are sized by their source identity, so renamed or translated imports keep
+  their size.
+- Alternative images: an item's owner can pick another image for its tile from the item's menu (text field
+  or file picker, with a reset). Without one, the item's own image shows. Hidden from players on
+  unidentified items.
+- Default body grid per system (dnd5e 8x5, CoC7 and Delta Green 5x3), still changeable by the GM, and a
+  GM settings button that puts every actor back on the default.
+
+### Known issues
+- Plutonium imports were tested offline only; the importer's drop prompt and its white icons on light
+  themes are not handled yet.
+- Long dnd5e weapons are shorter than the 10 cm scale would give, so they fit the 8x5 body.
+- A full body sends a new loose item to Unstowed even when a bag has room; drag it into the bag.
+
 ## [1.0.0] - 2026-10-24
 
 First release. Requires Foundry VTT 14.359 or later (tested on 14.369) with Call of Cthulhu 7th Edition

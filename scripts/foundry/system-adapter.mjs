@@ -6,7 +6,8 @@
 
 import { MODULE_ID, FLAGS, DEFAULT_BODY } from "../constants.mjs";
 import { resolveArt, sanitizeArt } from "../core/art.mjs";
-import { describeDnd5e } from "../core/dnd5e.mjs";
+import { autoBagDims as autoBagDims5e, bagDims as bagDims5e, cleanCopy, describeDnd5e, isWearable as isWearable5e } from "../core/dnd5e.mjs";
+import { sanitizeContainer } from "../core/sizes.mjs";
 import { CONTAINER_PRESETS, DND5E_PRESETS } from "../data/container-presets.mjs";
 import { DEFAULT_REGISTRY } from "../data/default-sizes.mjs";
 import { loc } from "./util.mjs";
@@ -28,6 +29,15 @@ import { loc } from "./util.mjs";
  * @property {(item: Item) => object} [describeExtras] extra size descriptor fields (core/sizes.mjs)
  * @property {(item: Item) => number} [quantity] stack size for the badge; unset = no stacks
  * @property {(item: Item, user: User) => string} [displayName] the name this user sees; unset = `item.name`
+ * @property {string} [nativeGridType] item type whose grids mirror the system's own containers; unset = no native bags
+ * @property {(item: Item) => string|null} [nativeContainer] id the system says holds this item
+ * @property {(item: Item) => {cols:number, rows:number}|null} [bagDims] grid from flag or item data; unset = flag only
+ * @property {(item: Item) => {cols:number, rows:number}|null} [autoBagDims] grid from item data alone
+ * @property {(item: Item) => boolean} [isWearable] may be Worn; unset = its type is in `armorTypes`
+ * @property {string[]} [wornActorTypes] actor types that wear anything; unset = all
+ * @property {(item: Item) => boolean} [isEquipped] Worn is derived from this; unset = the `worn` flag decides
+ * @property {(item: Item, target: Actor) => Promise<Item>} [prepareCopy] what to copy when an item leaves for `target`
+ * @property {(data: object, options: {give: boolean, root: boolean}) => object} [cleanCopy] strip what must not travel, in place
  */
 
 /** @type {Readonly<Record<string, SystemProfile>>} */
@@ -69,7 +79,18 @@ const PROFILES = Object.freeze({
       : item?.name ?? ""),
     // A chosen image could name an item the player has not identified. dnd5e shows `item.img` to
     // everyone, so that one is not a new leak.
-    concealsArt: (item, user) => !user?.isGM && item?.system?.identified === false
+    concealsArt: (item, user) => !user?.isGM && item?.system?.identified === false,
+    nativeGridType: "container",
+    nativeContainer: (item) => item?.system?.container || null,
+    bagDims: bagDims5e,
+    autoBagDims: autoBagDims5e,
+    isWearable: isWearable5e,
+    // Nobody is on a vehicle's back, and dnd5e's data preparation throws on equipped armor there.
+    wornActorTypes: ["character", "npc"],
+    isEquipped: (item) => item?.system?.equipped === true,
+    // An npc's weapon is a stat block until claimed: as the sheet does (d:57502).
+    prepareCopy: async (item, target) => (item.actor?.system?.isNPC && item.actor !== target && item.system?.asGear ? item.system.asGear() : item),
+    cleanCopy
   })
 });
 
@@ -131,6 +152,32 @@ export function isArmor(item) {
 }
 
 /**
+ * Whether this actor has a Worn strip at all.
+ * @param {Actor|null|undefined} actor
+ * @returns {boolean}
+ */
+export function wearsOn(actor) {
+  const types = profile()?.wornActorTypes;
+  return !types || !actor || types.includes(actor.type);
+}
+
+/**
+ * Whether an item may be Worn on an actor in the active system.
+ * @param {Item|object} item
+ * @param {Actor} [actor] on a copy, the one receiving it
+ * @returns {boolean}
+ */
+export function isWearable(item, actor = item?.parent) {
+  if (!wearsOn(actor)) return false;
+  return profile()?.isWearable ? profile().isWearable(item) : isArmor(item);
+}
+
+/** @returns {boolean} whether the active system has containers of its own, which then decide which bag holds what */
+export function hasNativeBags() {
+  return Boolean(profile()?.nativeGridType);
+}
+
+/**
  * Our flags of an item (or raw item data), read defensively.
  * @param {Item|object} item
  * @returns {object}
@@ -152,6 +199,91 @@ export function imageExtensions() {
  */
 export function cleanArt(value) {
   return sanitizeArt(value, imageExtensions());
+}
+
+/**
+ * The grid of an item: custom dims from the GM, else what the system's data gives it; `false` turns a bag off (A7).
+ * @param {Item|object} item
+ * @returns {{cols:number, rows:number}|null} null when it is not a container
+ */
+export function containerDims(item) {
+  const p = profile();
+  return p?.bagDims ? p.bagDims(item) : sanitizeContainer(moduleFlags(item)[FLAGS.CONTAINER]);
+}
+
+/**
+ * The grid an item would have with no GM choice.
+ * @param {Item|object} item
+ * @returns {{cols:number, rows:number}|null}
+ */
+export function autoContainerDims(item) {
+  return profile()?.autoBagDims?.(item) ?? null;
+}
+
+/**
+ * How an item got its grid.
+ * @param {Item|object} item
+ * @returns {"auto"|"custom"|"off"|"none"} `off` = the GM says this bag is not one
+ */
+export function containerMode(item) {
+  const flag = moduleFlags(item)[FLAGS.CONTAINER];
+  if (flag === false) return "off";
+  if (sanitizeContainer(flag)) return "custom";
+  return autoContainerDims(item) ? "auto" : "none";
+}
+
+/**
+ * Whether a grid mirrors a container of the system. A plain item given a grid through "Make Container" is not one:
+ * pointing `system.container` at it would only hide the item from the sheet.
+ * @param {Item|object|null|undefined} item
+ * @returns {boolean}
+ */
+export function isNativeGrid(item) {
+  const type = profile()?.nativeGridType;
+  return Boolean(type) && item?.type === type && Boolean(containerDims(item));
+}
+
+/**
+ * Whether a holder's tile stands for what it holds: a container of the system with no grid. A pointer at anything
+ * else is no holding of the system's: its sheet hides the item, so the case must show it for a user to move it out.
+ * @param {Item|object|null|undefined} holder
+ * @returns {boolean}
+ */
+export function holdsWithoutGrid(holder) {
+  return Boolean(holder) && holder.type === profile()?.nativeGridType && !containerDims(holder);
+}
+
+/**
+ * The item holding this one, as the system's sheet sees it. A dangling id counts as loose, and so does an item
+ * naming itself.
+ * @param {Item|object} item
+ * @param {Actor} [actor]
+ * @returns {Item|null} a bag with a grid (see isNativeGrid) or a holder with none, whose tile stands for this item
+ */
+export function nativeParent(item, actor = item?.parent) {
+  const id = profile()?.nativeContainer?.(item);
+  if (!id || id === (item.id ?? item._id)) return null;
+  return actor?.items?.get(id) ?? null;
+}
+
+/**
+ * Whether putting `item` into the grid `targetId` would make it hold itself. dnd5e checks this on its sheets only,
+ * and a cycle recurses forever in its `allContainedItems`, so nothing that writes `system.container` may skip it.
+ * @param {Actor} actor
+ * @param {Item|object} item
+ * @param {string} targetId
+ * @returns {boolean}
+ */
+export function wouldCycle(actor, item, targetId) {
+  let current = actor?.items?.get(targetId);
+  if (!isNativeGrid(current)) return false;
+  const seen = new Set();
+  while (current && !seen.has(current.id)) {
+    if (current.id === item.id) return true;
+    seen.add(current.id);
+    current = actor.items.get(profile().nativeContainer(current));
+  }
+  return false;
 }
 
 /**

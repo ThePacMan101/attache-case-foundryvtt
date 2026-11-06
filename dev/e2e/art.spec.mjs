@@ -561,12 +561,15 @@ for (const [worldId, meta] of Object.entries(ART_WORLDS)) {
       await expect(panelOf(root)).toHaveAttribute("src", CHOSEN);
     });
 
-    test("12 Worn chip shows the art (CoC7 and Delta Green)", async () => {
-      test.skip(meta.system === "dnd5e", "Worn has no dnd5e armor types before M4");
+    test("12 Worn chip shows the art", async () => {
       const { actorId, ids } = await fixture(gm.page, {
         name: "QA Art Worn",
         items: [{ key: "v", name: "Coat", kind: "armor", w: 2, h: 2, worn: true }]
       });
+      // dnd5e derives Worn from its own data, not from the flag.
+      if (meta.system === "dnd5e") {
+        await gm.page.evaluate(({ a, i }) => game.actors.get(a).items.get(i).update({ "system.type.value": "clothing", "system.equipped": true }), { a: actorId, i: ids.v });
+      }
       await setFlag(gm.page, actorId, ids.v, CHOSEN);
       const root = await openCase(pl.page, actorId);
       await expect(chipArt(root, ids.v)).toHaveAttribute("src", CHOSEN);

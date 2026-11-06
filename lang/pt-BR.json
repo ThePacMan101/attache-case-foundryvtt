@@ -64,6 +64,7 @@
       "Reset": "Restaurar Padrão",
       "Exclude": "Não ocupa espaço",
       "IsContainer": "Recipiente",
+      "ContainerAuto": "Automático: {size}",
       "UseDefault": "Usar padrão do mundo ({size})",
       "BodyHint": "0 colunas ou linhas: sem grade.",
       "Containers": "Recipientes",
@@ -135,7 +136,9 @@
       "InvalidArt": "Esse não é um caminho de imagem válido.",
       "NoCustomBodies": "Nenhum ator tem tamanho personalizado.",
       "BodiesCleared": "Tamanhos personalizados removidos: {count}.",
-      "UnsupportedActor": "Este tipo de ator não é suportado."
+      "UnsupportedActor": "Este tipo de ator não é suportado.",
+      "ContainerCycle": "{name} não pode ir para dentro de algo que ele mesmo contém.",
+      "TooDeep": "{name} guarda coisas aninhadas fundo demais: o que está mais fundo não foi copiado."
     },
     "Preset": {
       "BeltPouch": {

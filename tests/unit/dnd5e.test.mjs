@@ -206,9 +206,10 @@ describe("bags and vessels (M4 builds on these)", () => {
     expect(bagDims(bag(name, system))).toEqual(dims);
   });
 
-  it("the name table is exact: Left Pouch and a 30 lb Pack go by capacity", () => {
-    expect(bagDims(bag("Left Pouch", lb(200)))).toEqual({ cols: 12, rows: 8 });
-    expect(bagDims(bag("Central Pouch", ft3(64)))).toEqual({ cols: 12, rows: 8 });
+  it("the name table is exact: the Haversack's pouches have their own rows, and a 30 lb Pack goes by capacity", () => {
+    expect(bagDims(bag("Left Pouch", lb(200)))).toEqual({ cols: 4, rows: 3 });
+    expect(bagDims(bag("Central Pouch", ft3(64)))).toEqual({ cols: 6, rows: 4 });
+    expect(bagDims(bag("Pouch of Zzyzx", lb(200)))).toEqual({ cols: 12, rows: 8 });
     expect(bagDims(bag("Explorer's Pack", lb(30)))).toEqual({ cols: 8, rows: 6 });
     expect(bagDims(bag("Diplomat's Pack", lb(360)))).toEqual({ cols: 12, rows: 8 });
   });
