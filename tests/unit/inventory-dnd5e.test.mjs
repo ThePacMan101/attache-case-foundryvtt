@@ -4,7 +4,7 @@
  * sheet, no `_preCreate`. Those are in dev/e2e/dnd5e-sync.spec.mjs.
  */
 
-import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { installFoundry } from "./helpers/fake-foundry.mjs";
 
 const env = installFoundry({ system: "dnd5e", updateHooks: true });
@@ -1521,9 +1521,11 @@ describe("review of M4", () => {
       const a = hero(chain(4));
       const b = hero();
       expect(await svc.transferItem(of(a, "root"), b)).toBe(true);
-      await settle(20);
-      expect(b.items.size).toBe(6);
-      expect(a.items.size).toBe(0);
+      // Wait for the outcome, not a fixed time: CI runners are slower than local Docker.
+      await vi.waitFor(() => {
+        expect(b.items.size).toBe(6);
+        expect(a.items.size).toBe(0);
+      }, { timeout: 2000 });
     });
     it("an outside cycle is refused too, and the walk ends", async () => {
       const a = hero([

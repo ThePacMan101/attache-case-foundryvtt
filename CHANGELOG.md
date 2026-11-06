@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-05
+
+### Fixed
+- Release build: a unit test waited a fixed time and failed on slower CI runners, so 1.1.0 was published
+  without its files. 1.1.1 has the same features as 1.1.0.
+
 ## [1.1.0] - 2026-11-05
 
 Adds D&D 5e (`dnd5e`, tested with 5.3.3) next to CoC7 and Delta Green.
